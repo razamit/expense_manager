@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id            String        @id @default(cuid())
+  displayName   String
+  companyType   String
+  accountNumber String?
+  lastScrapedAt DateTime?
+  lastBalance   Float?
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  transactions  Transaction[]
+  scrapeRuns    ScrapeRun[]
+
+  @@unique([companyType, accountNumber])
+}
+
+model Transaction {
+  id                 String    @id @default(cuid())
+  accountId          String
+  externalId         String?
+  date               DateTime
+  processedDate      DateTime?
+  originalAmount     Float
+  originalCurrency   String    @default("ILS")
+  chargedAmount      Float
+  chargedCurrency    String    @default("ILS")
+  description        String
+  memo               String?
+  bankCategory       String?
+  rawTransaction     String?
+  transactionType    String    @default("normal")
+  installmentNumber  Int?
+  installmentTotal   Int?
+  status             String    @default("completed")
+  direction          String    @default("expense")
+  categoryId         String?
+  isCategorizedByRule Boolean  @default(false)
+  isExcluded         Boolean  @default(false)
+  scrapeRunId        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category  Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  scrapeRun ScrapeRun? @relation(fields: [scrapeRunId], references: [id], onDelete: SetNull)
+
+  @@unique([accountId, externalId, date, chargedAmount])
+  @@index([accountId, date, chargedAmount, description])
+  @@index([date])
+  @@index([categoryId])
+  @@index([direction])
+}
+
+model Category {
+  id           String         @id @default(cuid())
+  name         String
+  icon         String?
+  color        String?
+  parentId     String?
+  isSystem     Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  parent       Category?      @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[]     @relation("CategoryHierarchy")
+  transactions Transaction[]
+  rules        CategoryRule[]
+  budgets      Budget[]
+}
+
+model CategoryRule {
+  id           String   @id @default(cuid())
+  categoryId   String
+  matchField   String   @default("description")
+  matchPattern String
+  isRegex      Boolean  @default(false)
+  priority     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([priority])
+}
+
+model ScrapeRun {
+  id           String        @id @default(cuid())
+  accountId    String
+  startedAt    DateTime      @default(now())
+  completedAt  DateTime?
+  status       String        @default("running")
+  errorType    String?
+  errorMessage String?
+  txnCount     Int           @default(0)
+  newTxnCount  Int           @default(0)
+  account      Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+}
+
+model Budget {
+  id           String   @id @default(cuid())
+  categoryId   String
+  monthlyLimit Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId])
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

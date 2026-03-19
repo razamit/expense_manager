@@ -1,0 +1,64 @@
+diff --git a/node_modules/israeli-bank-scrapers/lib/scrapers/base-isracard-amex.js b/node_modules/israeli-bank-scrapers/lib/scrapers/base-isracard-amex.js
+index c1a1f32..f50e320 100644
+--- a/node_modules/israeli-bank-scrapers/lib/scrapers/base-isracard-amex.js
++++ b/node_modules/israeli-bank-scrapers/lib/scrapers/base-isracard-amex.js
+@@ -19,9 +19,13 @@ var _errors = require("./errors");
+ var _browser = require("../helpers/browser");
+ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+ const RATE_LIMIT = {
+-  SLEEP_BETWEEN: 1000,
+-  TRANSACTIONS_BATCH_SIZE: 10
++  SLEEP_BETWEEN: 2500,
++  TRANSACTIONS_BATCH_SIZE: 5
+ };
++function randomDelay(min = 500, max = 2000) {
++  const delay = Math.floor(Math.random() * (max - min + 1)) + min;
++  return new Promise(resolve => setTimeout(resolve, delay));
++}
+ const COUNTRY_CODE = '212';
+ const ID_TYPE = '1';
+ const INSTALLMENTS_KEYWORD = 'תשלום';
+@@ -119,7 +123,7 @@ function convertTransactions(txns, processedDate, options) {
+ async function fetchTransactions(page, options, companyServiceOptions, startMoment, monthMoment) {
+   const accounts = await fetchAccounts(page, companyServiceOptions.servicesUrl, monthMoment);
+   const dataUrl = getTransactionsUrl(companyServiceOptions.servicesUrl, monthMoment);
+-  await (0, _waiting.sleep)(RATE_LIMIT.SLEEP_BETWEEN);
++  await randomDelay(2000, 3500);
+   debug(`fetching transactions from ${dataUrl} for month ${monthMoment.format('YYYY-MM')}`);
+   const dataResult = await (0, _fetch.fetchGetWithinPage)(page, dataUrl);
+   if (dataResult && _lodash.default.get(dataResult, 'Header.Status') === '1' && dataResult.CardsTransactionsListBean) {
+@@ -180,7 +184,11 @@ async function getExtraScrapAccount(page, options, accountMap, month) {
+     const txns = [];
+     for (const txnsChunk of _lodash.default.chunk(account.txns, RATE_LIMIT.TRANSACTIONS_BATCH_SIZE)) {
+       debug(`processing chunk of ${txnsChunk.length} transactions for account ${account.accountNumber}`);
+-      const updatedTxns = await Promise.all(txnsChunk.map(t => getExtraScrapTransaction(page, options, month, account.index, t)));
++      const updatedTxns = [];
++      for (const t of txnsChunk) {
++        await randomDelay(1500, 3000);
++        updatedTxns.push(await getExtraScrapTransaction(page, options, month, account.index, t));
++      }
+       await (0, _waiting.sleep)(RATE_LIMIT.SLEEP_BETWEEN);
+       txns.push(...updatedTxns);
+     }
+diff --git a/node_modules/israeli-bank-scrapers/lib/scrapers/visa-cal.js b/node_modules/israeli-bank-scrapers/lib/scrapers/visa-cal.js
+index 85efbdb..83ebc93 100644
+--- a/node_modules/israeli-bank-scrapers/lib/scrapers/visa-cal.js
++++ b/node_modules/israeli-bank-scrapers/lib/scrapers/visa-cal.js
+@@ -169,7 +169,7 @@ class VisaCalScraper extends _baseScraperWithBrowser.BaseScraperWithBrowser {
+     return frame;
+   };
+   async getCards() {
+-    const initData = await (0, _waiting.waitUntil)(() => (0, _storage.getFromSessionStorage)(this.page, 'init'), 'get init data in session storage', 10000, 1000);
++    const initData = await (0, _waiting.waitUntil)(() => (0, _storage.getFromSessionStorage)(this.page, 'init'), 'get init data in session storage', 60000, 1000);
+     if (!initData) {
+       throw new Error('could not find "init" data in session storage');
+     }
+@@ -184,7 +184,7 @@ class VisaCalScraper extends _baseScraperWithBrowser.BaseScraperWithBrowser {
+   async getAuthorizationHeader() {
+     if (!this.authorization) {
+       debug('fetching authorization header');
+-      const authModule = await (0, _waiting.waitUntil)(async () => authModuleOrUndefined(await (0, _storage.getFromSessionStorage)(this.page, 'auth-module')), 'get authorization header with valid token in session storage', 10_000, 50);
++      const authModule = await (0, _waiting.waitUntil)(async () => authModuleOrUndefined(await (0, _storage.getFromSessionStorage)(this.page, 'auth-module')), 'get authorization header with valid token in session storage', 60000, 50);
+       return `CALAuthScheme ${authModule.auth.calConnectToken}`;
+     }
+     return this.authorization;

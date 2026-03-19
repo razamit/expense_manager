@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch",
+      "Bash(tail:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(gh search:*)",
+      "Bash(head:*)",
+      "Bash(cd:*)",
+      "Bash(cd D:/Projects/FinanceChecker && npx patch-package israeli-bank-scrapers 2>&1)",
+      "Bash(cd D:/Projects/FinanceChecker && sqlite3 prisma/dev.db \"SELECT COUNT\\(*\\) FROM 'Transaction';\" 2>&1)",
+      "Bash(cd D:/Projects/FinanceChecker && sqlite3 prisma/dev.db \"SELECT id, displayName, companyType, isActive, accountNumber FROM Account;\" 2>&1)",
+      "Bash(cd D:/Projects/FinanceChecker && sqlite3 prisma/dev.db \"SELECT accountId, COUNT\\(*\\) as cnt FROM 'Transaction' GROUP BY accountId;\" 2>&1)",
+      "Bash(cd D:/Projects/FinanceChecker && sqlite3 prisma/dev.db \"SELECT COUNT\\(*\\) FROM 'Transaction' WHERE rawTransaction IS NOT NULL AND rawTransaction != '';\" 2>&1)",
+      "Bash(cd /d/Projects/FinanceChecker && npx prisma migrate dev --name add-transaction-excluded-flag 2>&1)",
+      "Bash(cd /d/Projects/FinanceChecker && npx prisma generate 2>&1)",
+      "Bash(grep:*)",
+      "Bash(grep scraper-adapter:*)",
+      "Bash(cd /d/Projects/FinanceChecker && npx patch-package israeli-bank-scrapers 2>&1)"
+    ]
+  }
+}
