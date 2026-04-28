@@ -35,9 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await CategoryHierarchyManager.assertLeafCategory(categoryId);
-
-    const rule = await CategoryRuleRepository.create({
+    const { rule, autoCategorized } = await CategoryManager.createRule({
       categoryId,
       matchField,
       matchPattern,
@@ -45,8 +43,7 @@ export async function POST(request: NextRequest) {
       priority,
     });
 
-    CategoryManager.invalidateCache();
-    return NextResponse.json(rule);
+    return NextResponse.json({ ...rule, autoCategorized });
   } catch (error) {
     return handleRuleError(error);
   }

@@ -299,7 +299,7 @@ export function CategoryAssignDialog({
                 placeholder={transaction?.description ?? "Pattern..."}
               />
               <p className="text-xs text-muted-foreground">
-                Future transactions matching this pattern will be auto-categorized.
+                Existing and future transactions matching this pattern will be auto-categorized.
               </p>
             </div>
           )}

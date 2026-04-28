@@ -4,6 +4,14 @@ import type { CategoryRule } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { CategoryHierarchyManager } from "@/managers/CategoryHierarchyManager";
 
+type CreateRuleInput = {
+  categoryId: string;
+  matchField?: string;
+  matchPattern: string;
+  isRegex?: boolean;
+  priority?: number;
+};
+
 export class CategoryManager {
   private static rulesCache: CategoryRule[] | null = null;
 
@@ -71,6 +79,20 @@ export class CategoryManager {
     return categorized;
   }
 
+  static async createRule(
+    data: CreateRuleInput
+  ): Promise<{ rule: CategoryRule; autoCategorized: number }> {
+    await CategoryHierarchyManager.assertLeafCategory(data.categoryId);
+
+    const rule = await CategoryRuleRepository.create(data);
+
+    this.invalidateCache();
+
+    const autoCategorized = await this.reapplyRulesToTransactions();
+
+    return { rule, autoCategorized };
+  }
+
   static async createRuleFromTransaction(
     transactionId: string,
     categoryId: string,
@@ -97,41 +119,52 @@ export class CategoryManager {
 
     await TransactionRepository.updateCategory(transactionId, categoryId, true);
 
-    const autoCategorized = await this.applyRuleToUncategorized(
-      "description",
-      matchPattern,
-      false,
-      categoryId,
+    const autoCategorized = await this.reapplyRulesToTransactions(
       transactionId
     );
 
     return { autoCategorized };
   }
 
-  private static async applyRuleToUncategorized(
-    matchField: string,
-    matchPattern: string,
-    isRegex: boolean,
-    categoryId: string,
-    excludeTransactionId: string
+  private static async reapplyRulesToTransactions(
+    excludeTransactionId?: string
   ): Promise<number> {
-    const uncategorized = await prisma.transaction.findMany({
-      where: { categoryId: null, id: { not: excludeTransactionId } },
-      select: { id: true, description: true, memo: true },
+    const transactions = await prisma.transaction.findMany({
+      where: excludeTransactionId
+        ? { id: { not: excludeTransactionId } }
+        : undefined,
+      select: {
+        id: true,
+        description: true,
+        memo: true,
+        categoryId: true,
+        isCategorizedByRule: true,
+      },
     });
 
-    const rule = { matchField, matchPattern, isRegex } as Pick<
-      CategoryRule,
-      "matchField" | "matchPattern" | "isRegex"
-    >;
-
     let count = 0;
-    for (const txn of uncategorized) {
-      const fieldValue = matchField === "memo" ? (txn.memo ?? "") : txn.description;
-      if (this.matchesRule(fieldValue, rule)) {
-        await TransactionRepository.updateCategory(txn.id, categoryId, true);
-        count++;
+
+    for (const txn of transactions) {
+      const categoryId = await this.categorizeTransaction(
+        txn.description,
+        txn.memo
+      );
+
+      if (!categoryId) {
+        continue;
       }
+
+      const canAutoCategorize = txn.categoryId === null || txn.isCategorizedByRule;
+      if (!canAutoCategorize) {
+        continue;
+      }
+
+      if (txn.categoryId === categoryId && txn.isCategorizedByRule) {
+        continue;
+      }
+
+      await TransactionRepository.updateCategory(txn.id, categoryId, true);
+      count++;
     }
 
     return count;
