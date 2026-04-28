@@ -24,28 +24,51 @@ export type ImportedTransactionData = {
 };
 
 export class TransactionRepository {
-  static async findWithFilters(
+  private static buildWhere(
     filters: TransactionFilters,
-    categoryIds?: string[]
-  ) {
+    categoryIds?: string[],
+    includeAccountFilter: boolean = true
+  ): Prisma.TransactionWhereInput {
     const where: Prisma.TransactionWhereInput = {};
-    const page = filters.page ?? 1;
-    const pageSize = filters.pageSize ?? 50;
 
     if (filters.startDate) {
-      where.date = { ...((where.date as object) ?? {}), gte: new Date(filters.startDate) };
+      where.date = {
+        ...((where.date as object) ?? {}),
+        gte: new Date(filters.startDate),
+      };
     }
+
     if (filters.endDate) {
-      where.date = { ...((where.date as object) ?? {}), lte: new Date(filters.endDate) };
+      where.date = {
+        ...((where.date as object) ?? {}),
+        lte: new Date(filters.endDate),
+      };
     }
-    if (filters.accountId) where.accountId = filters.accountId;
+
+    if (includeAccountFilter && filters.accountId) {
+      where.accountId = filters.accountId;
+    }
+
     if (filters.categoryId) {
       where.categoryId = categoryIds?.length ? { in: categoryIds } : filters.categoryId;
     }
-    if (filters.direction) where.direction = filters.direction;
-    if (filters.status) where.status = filters.status;
-    if (filters.uncategorizedOnly) where.categoryId = null;
-    if (filters.excludeExcluded) where.isExcluded = false;
+
+    if (filters.direction) {
+      where.direction = filters.direction;
+    }
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    if (filters.uncategorizedOnly) {
+      where.categoryId = null;
+    }
+
+    if (filters.excludeExcluded) {
+      where.isExcluded = false;
+    }
+
     if (filters.search) {
       where.OR = [
         { description: { contains: filters.search } },
@@ -53,7 +76,19 @@ export class TransactionRepository {
       ];
     }
 
-    const [transactions, total] = await Promise.all([
+    return where;
+  }
+
+  static async findWithFilters(
+    filters: TransactionFilters,
+    categoryIds?: string[]
+  ) {
+    const where = this.buildWhere(filters, categoryIds);
+    const sourceCountsWhere = this.buildWhere(filters, categoryIds, false);
+    const page = filters.page ?? 1;
+    const pageSize = filters.pageSize ?? 50;
+
+    const [transactions, total, groupedSourceCounts] = await Promise.all([
       prisma.transaction.findMany({
         where,
         include: {
@@ -72,9 +107,30 @@ export class TransactionRepository {
         take: pageSize,
       }),
       prisma.transaction.count({ where }),
+      prisma.transaction.groupBy({
+        by: ["accountId"],
+        where: sourceCountsWhere,
+        _count: true,
+      }),
     ]);
 
-    return { transactions, total, page, pageSize };
+    const sourceCounts = Object.fromEntries(
+      groupedSourceCounts.map((entry) => [entry.accountId, entry._count])
+    );
+
+    const allSourcesTotal = groupedSourceCounts.reduce(
+      (sum, entry) => sum + entry._count,
+      0
+    );
+
+    return {
+      transactions,
+      total,
+      page,
+      pageSize,
+      sourceCounts,
+      allSourcesTotal,
+    };
   }
 
   static async findById(id: string) {

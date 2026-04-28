@@ -69,6 +69,8 @@ export class TransactionManager {
       total: result.total,
       page: result.page,
       pageSize: result.pageSize,
+      sourceCounts: result.sourceCounts,
+      allSourcesTotal: result.allSourcesTotal,
     };
   }
 

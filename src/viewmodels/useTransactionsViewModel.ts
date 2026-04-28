@@ -2,11 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getCategoryDisplayName } from "@/lib/category-hierarchy";
-import type { TransactionDTO, TransactionFilters, CategoryDTO } from "@/types";
+import type {
+  AccountDTO,
+  CategoryDTO,
+  TransactionDTO,
+  TransactionFilters,
+} from "@/types";
 
 interface TransactionsState {
+  accounts: AccountDTO[];
   transactions: TransactionDTO[];
   categories: CategoryDTO[];
+  sourceCounts: Record<string, number>;
+  allSourcesTotal: number;
   total: number;
   page: number;
   pageSize: number;
@@ -14,10 +22,22 @@ interface TransactionsState {
   isLoading: boolean;
 }
 
+interface TransactionsResponse {
+  transactions: TransactionDTO[];
+  total: number;
+  page: number;
+  pageSize: number;
+  sourceCounts: Record<string, number>;
+  allSourcesTotal: number;
+}
+
 export function useTransactionsViewModel() {
   const [state, setState] = useState<TransactionsState>({
+    accounts: [],
     transactions: [],
     categories: [],
+    sourceCounts: {},
+    allSourcesTotal: 0,
     total: 0,
     page: 1,
     pageSize: 50,
@@ -41,15 +61,23 @@ export function useTransactionsViewModel() {
 
   const fetchTransactions = useCallback(
     async (filters: TransactionFilters = state.filters) => {
-      setState((prev) => ({ ...prev, isLoading: true }));
+      setState((prev) => ({
+        ...prev,
+        filters,
+        page: filters.page ?? 1,
+        pageSize: filters.pageSize ?? prev.pageSize,
+        isLoading: true,
+      }));
 
       const params = buildSearchParams(filters);
       const response = await fetch(`/api/transactions?${params}`);
-      const data = await response.json();
+      const data = (await response.json()) as TransactionsResponse;
 
       setState((prev) => ({
         ...prev,
         transactions: data.transactions,
+        sourceCounts: data.sourceCounts,
+        allSourcesTotal: data.allSourcesTotal,
         total: data.total,
         page: data.page,
         pageSize: data.pageSize,
@@ -63,11 +91,13 @@ export function useTransactionsViewModel() {
   async function refreshSilently() {
     const params = buildSearchParams(state.filters);
     const response = await fetch(`/api/transactions?${params}`);
-    const data = await response.json();
+    const data = (await response.json()) as TransactionsResponse;
 
     setState((prev) => ({
       ...prev,
       transactions: data.transactions,
+      sourceCounts: data.sourceCounts,
+      allSourcesTotal: data.allSourcesTotal,
       total: data.total,
     }));
   }
@@ -78,9 +108,16 @@ export function useTransactionsViewModel() {
     setState((prev) => ({ ...prev, categories }));
   }, []);
 
+  const fetchAccounts = useCallback(async () => {
+    const response = await fetch("/api/accounts");
+    const accounts = await response.json();
+    setState((prev) => ({ ...prev, accounts }));
+  }, []);
+
   useEffect(() => {
     fetchTransactions();
     fetchCategories();
+    fetchAccounts();
   }, []);
 
   function updateFilters(newFilters: Partial<TransactionFilters>) {
