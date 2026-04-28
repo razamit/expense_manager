@@ -16,15 +16,23 @@ export function useCategoriesViewModel() {
     isLoading: true,
   });
 
-  const fetchData = useCallback(async () => {
-    setState((prev) => ({ ...prev, isLoading: true }));
+  const fetchData = useCallback(async (showLoading: boolean = true) => {
+    if (showLoading) {
+      setState((prev) => ({ ...prev, isLoading: true }));
+    }
+
     const [catRes, ruleRes] = await Promise.all([
       fetch("/api/categories"),
       fetch("/api/category-rules"),
     ]);
     const categories = await catRes.json();
     const rules = await ruleRes.json();
-    setState({ categories, rules, isLoading: false });
+    setState((prev) => ({
+      ...prev,
+      categories,
+      rules,
+      isLoading: false,
+    }));
   }, []);
 
   useEffect(() => {
@@ -35,30 +43,34 @@ export function useCategoriesViewModel() {
     name: string;
     icon?: string;
     color?: string;
+    parentId?: string | null;
   }) {
-    await fetch("/api/categories", {
+    const response = await fetch("/api/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    fetchData();
+    await assertOk(response);
+    await fetchData(false);
   }
 
   async function updateCategory(
     id: string,
-    data: { name?: string; icon?: string; color?: string }
+    data: { name?: string; icon?: string; color?: string; parentId?: string | null }
   ) {
-    await fetch("/api/categories", {
+    const response = await fetch("/api/categories", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, ...data }),
     });
-    fetchData();
+    await assertOk(response);
+    await fetchData(false);
   }
 
   async function removeCategory(id: string) {
-    await fetch(`/api/categories?id=${id}`, { method: "DELETE" });
-    fetchData();
+    const response = await fetch(`/api/categories?id=${id}`, { method: "DELETE" });
+    await assertOk(response);
+    await fetchData(false);
   }
 
   async function addRule(data: {
@@ -68,29 +80,40 @@ export function useCategoriesViewModel() {
     isRegex?: boolean;
     priority?: number;
   }) {
-    await fetch("/api/category-rules", {
+    const response = await fetch("/api/category-rules", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    fetchData();
+    await assertOk(response);
+    await fetchData(false);
   }
 
   async function updateRule(
     id: string,
     data: Partial<CategoryRuleDTO>
   ) {
-    await fetch("/api/category-rules", {
+    const response = await fetch("/api/category-rules", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, ...data }),
     });
-    fetchData();
+    await assertOk(response);
+    await fetchData(false);
   }
 
   async function removeRule(id: string) {
-    await fetch(`/api/category-rules?id=${id}`, { method: "DELETE" });
-    fetchData();
+    const response = await fetch(`/api/category-rules?id=${id}`, { method: "DELETE" });
+    await assertOk(response);
+    await fetchData(false);
+  }
+
+  async function removeAllRules() {
+    const response = await fetch("/api/category-rules?all=true", {
+      method: "DELETE",
+    });
+    await assertOk(response);
+    await fetchData(false);
   }
 
   return {
@@ -101,6 +124,19 @@ export function useCategoriesViewModel() {
     addRule,
     updateRule,
     removeRule,
+    removeAllRules,
     refresh: fetchData,
   };
+}
+
+async function assertOk(response: Response) {
+  if (response.ok) {
+    return;
+  }
+
+  const data = (await response.json().catch(() => null)) as
+    | { error?: string }
+    | null;
+
+  throw new Error(data?.error ?? "Request failed");
 }

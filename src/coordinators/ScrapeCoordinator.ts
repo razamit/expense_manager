@@ -64,7 +64,13 @@ export class ScrapeCoordinator {
         let totalTxn = 0;
         let totalNew = 0;
 
-        for (const scrapeAccount of scrapeResult.accounts) {
+        const matchingAccounts = account.accountNumber
+          ? scrapeResult.accounts.filter(
+              (sa) => sa.accountNumber === account.accountNumber
+            )
+          : scrapeResult.accounts;
+
+        for (const scrapeAccount of matchingAccounts) {
           const updateData: Record<string, unknown> = {};
           if (scrapeAccount.accountNumber !== "unknown") {
             updateData.accountNumber = scrapeAccount.accountNumber;

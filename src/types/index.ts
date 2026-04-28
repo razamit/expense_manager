@@ -41,7 +41,10 @@ export interface CategoryDTO {
   icon: string | null;
   color: string | null;
   parentId: string | null;
+  parentName?: string | null;
   isSystem: boolean;
+  childCount?: number;
+  isLeaf?: boolean;
   transactionCount?: number;
   totalSpent?: number;
 }

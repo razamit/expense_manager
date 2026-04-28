@@ -95,9 +95,11 @@ export function useTransactionsViewModel() {
     transactionId: string,
     categoryId: string | null,
     createRule?: boolean,
-    rulePattern?: string
+    rulePattern?: string,
+    category?: CategoryDTO
   ) {
-    const matchedCategory = state.categories.find((c) => c.id === categoryId);
+    const previousTransaction = state.transactions.find((txn) => txn.id === transactionId);
+    const matchedCategory = category ?? state.categories.find((c) => c.id === categoryId);
 
     setState((prev) => ({
       ...prev,
@@ -125,12 +127,69 @@ export function useTransactionsViewModel() {
       }),
     });
 
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+
+      if (previousTransaction) {
+        setState((prev) => ({
+          ...prev,
+          transactions: prev.transactions.map((txn) =>
+            txn.id === transactionId ? previousTransaction : txn
+          ),
+        }));
+      }
+
+      throw new Error(data?.error ?? "Failed to update transaction category");
+    }
+
     if (createRule) {
       const data = await response.json();
       if (data.autoCategorized > 0) {
-        refreshSilently();
+        await refreshSilently();
       }
     }
+  }
+
+  async function createCategory(data: {
+    name: string;
+    parentId?: string | null;
+    color?: string;
+  }): Promise<CategoryDTO> {
+    const response = await fetch("/api/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    const createdCategory = (await response.json().catch(() => null)) as
+      | CategoryDTO
+      | { error?: string }
+      | null;
+
+    if (!response.ok) {
+      const errorMessage =
+        createdCategory && "error" in createdCategory
+          ? createdCategory.error
+          : undefined;
+
+      throw new Error(
+        errorMessage ?? "Failed to create category"
+      );
+    }
+
+    const category = createdCategory as CategoryDTO;
+
+    setState((prev) => ({
+      ...prev,
+      categories: [
+        ...prev.categories.filter((existing) => existing.id !== category.id),
+        category,
+      ],
+    }));
+
+    return category;
   }
 
   async function toggleExcluded(transactionId: string) {
@@ -168,6 +227,7 @@ export function useTransactionsViewModel() {
     updateFilters,
     goToPage,
     assignCategory,
+    createCategory,
     toggleExcluded,
     exportCSV,
     refresh: () => fetchTransactions(),

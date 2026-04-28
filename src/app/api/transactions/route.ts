@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TransactionManager } from "@/managers/TransactionManager";
+import { CategoryHierarchyError } from "@/managers/CategoryHierarchyManager";
 import type { TransactionFilters } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -23,48 +24,70 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const body = await request.json();
-  const { id, action, categoryId, createRule, rulePattern } = body;
+  try {
+    const body = await request.json();
+    const { id, action, categoryId, createRule, rulePattern } = body;
 
-  if (!id) {
-    return NextResponse.json({ error: "id is required" }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    if (action === "toggle-excluded") {
+      const isExcluded = await TransactionManager.toggleExcluded(id);
+      return NextResponse.json({ success: true, isExcluded });
+    }
+
+    if (createRule && categoryId) {
+      const { CategoryManager } = await import("@/managers/CategoryManager");
+      const { autoCategorized } = await CategoryManager.createRuleFromTransaction(id, categoryId, rulePattern);
+      return NextResponse.json({ success: true, autoCategorized });
+    }
+
+    await TransactionManager.assignCategory(id, categoryId);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleTransactionError(error);
   }
-
-  if (action === "toggle-excluded") {
-    const isExcluded = await TransactionManager.toggleExcluded(id);
-    return NextResponse.json({ success: true, isExcluded });
-  }
-
-  if (createRule && categoryId) {
-    const { CategoryManager } = await import("@/managers/CategoryManager");
-    const { autoCategorized } = await CategoryManager.createRuleFromTransaction(id, categoryId, rulePattern);
-    return NextResponse.json({ success: true, autoCategorized });
-  }
-
-  await TransactionManager.assignCategory(id, categoryId);
-  return NextResponse.json({ success: true });
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  try {
+    const body = await request.json();
 
-  if (body.action === "export") {
-    const csv = await TransactionManager.exportCSV(body.filters ?? {});
-    return new NextResponse(csv, {
-      headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": "attachment; filename=transactions.csv",
-      },
-    });
+    if (body.action === "export") {
+      const csv = await TransactionManager.exportCSV(body.filters ?? {});
+      return new NextResponse(csv, {
+        headers: {
+          "Content-Type": "text/csv",
+          "Content-Disposition": "attachment; filename=transactions.csv",
+        },
+      });
+    }
+
+    if (body.action === "bulk-categorize") {
+      const count = await TransactionManager.bulkCategorize(
+        body.transactionIds,
+        body.categoryId
+      );
+      return NextResponse.json({ categorized: count });
+    }
+
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  } catch (error) {
+    return handleTransactionError(error);
   }
+}
 
-  if (body.action === "bulk-categorize") {
-    const count = await TransactionManager.bulkCategorize(
-      body.transactionIds,
-      body.categoryId
+function handleTransactionError(error: unknown) {
+  if (error instanceof CategoryHierarchyError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.statusCode }
     );
-    return NextResponse.json({ categorized: count });
   }
 
-  return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  return NextResponse.json(
+    { error: "Unexpected transaction error" },
+    { status: 500 }
+  );
 }

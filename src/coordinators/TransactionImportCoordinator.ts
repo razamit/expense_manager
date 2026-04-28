@@ -1,4 +1,7 @@
-import { TransactionRepository } from "@/repositories/TransactionRepository";
+import {
+  TransactionRepository,
+  type ImportedTransactionData,
+} from "@/repositories/TransactionRepository";
 import { CategoryManager } from "@/managers/CategoryManager";
 import { detectDirection } from "@/lib/amount-utils";
 import { normalizeToDateOnly } from "@/lib/date-utils";
@@ -11,6 +14,12 @@ export interface ImportResult {
   categorizedCount: number;
 }
 
+type ImportPayload = {
+  data: ImportedTransactionData;
+  description: string;
+  memo: string | null;
+};
+
 export class TransactionImportCoordinator {
   static async importTransactions(
     accountId: string,
@@ -21,10 +30,65 @@ export class TransactionImportCoordinator {
     let updatedTransactions = 0;
     let categorizedCount = 0;
 
-    for (const scraped of scrapedTransactions) {
-      const direction = detectDirection(scraped.chargedAmount);
+    const groupedTransactions = this.groupTransactions(
+      scrapedTransactions.map((scraped) =>
+        this.buildImportPayload(accountId, scrapeRunId, scraped)
+      )
+    );
 
-      const { isNew, transaction } = await TransactionRepository.upsertFromScrape({
+    for (const group of groupedTransactions.values()) {
+      const existingTransactions = await TransactionRepository.findMatchingTransactions(
+        group[0].data
+      );
+
+      for (const [index, payload] of group.entries()) {
+        const existingTransaction = existingTransactions[index];
+        const transaction = existingTransaction
+          ? await TransactionRepository.updateFromScrape(
+              existingTransaction.id,
+              payload.data
+            )
+          : await TransactionRepository.createFromScrape(payload.data);
+
+        if (existingTransaction) {
+          updatedTransactions++;
+          continue;
+        }
+
+        newTransactions++;
+
+        if (!transaction.categoryId) {
+          const categoryId = await CategoryManager.categorizeTransaction(
+            payload.description,
+            payload.memo
+          );
+          if (categoryId) {
+            await TransactionRepository.updateCategory(
+              transaction.id,
+              categoryId,
+              true
+            );
+            categorizedCount++;
+          }
+        }
+      }
+    }
+
+    return {
+      totalProcessed: scrapedTransactions.length,
+      newTransactions,
+      updatedTransactions,
+      categorizedCount,
+    };
+  }
+
+  private static buildImportPayload(
+    accountId: string,
+    scrapeRunId: string,
+    scraped: ScrapedTransaction
+  ): ImportPayload {
+    return {
+      data: {
         accountId,
         externalId: scraped.identifier?.trim() || null,
         date: normalizeToDateOnly(scraped.date),
@@ -45,37 +109,24 @@ export class TransactionImportCoordinator {
         installmentNumber: scraped.installments?.number ?? null,
         installmentTotal: scraped.installments?.total ?? null,
         status: scraped.status,
-        direction,
+        direction: detectDirection(scraped.chargedAmount),
         scrapeRunId,
-      });
+      },
+      description: scraped.description,
+      memo: scraped.memo ?? null,
+    };
+  }
 
-      if (isNew) {
-        newTransactions++;
+  private static groupTransactions(payloads: ImportPayload[]) {
+    const groups = new Map<string, ImportPayload[]>();
 
-        if (!transaction.categoryId) {
-          const categoryId = await CategoryManager.categorizeTransaction(
-            scraped.description,
-            scraped.memo ?? null
-          );
-          if (categoryId) {
-            await TransactionRepository.updateCategory(
-              transaction.id,
-              categoryId,
-              true
-            );
-            categorizedCount++;
-          }
-        }
-      } else {
-        updatedTransactions++;
-      }
+    for (const payload of payloads) {
+      const key = TransactionRepository.buildImportMatchKey(payload.data);
+      const group = groups.get(key) ?? [];
+      group.push(payload);
+      groups.set(key, group);
     }
 
-    return {
-      totalProcessed: scrapedTransactions.length,
-      newTransactions,
-      updatedTransactions,
-      categorizedCount,
-    };
+    return groups;
   }
 }

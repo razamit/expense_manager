@@ -40,6 +40,11 @@ export class CategoryRuleRepository {
     await prisma.categoryRule.delete({ where: { id } });
   }
 
+  static async removeAll(): Promise<number> {
+    const result = await prisma.categoryRule.deleteMany();
+    return result.count;
+  }
+
   static async findAllOrderedByPriority() {
     return prisma.categoryRule.findMany({
       orderBy: [{ priority: "desc" }, { createdAt: "asc" }],

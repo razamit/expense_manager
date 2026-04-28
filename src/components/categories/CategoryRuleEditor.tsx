@@ -12,6 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  getCategoryDisplayName,
+  getLeafCategories,
+  sortCategoriesByDisplayName,
+} from "@/lib/category-hierarchy";
 import { Switch } from "@/components/ui/switch";
 import type { CategoryDTO, CategoryRuleDTO } from "@/types";
 
@@ -24,8 +29,9 @@ interface CategoryRuleEditorProps {
     matchField?: string;
     isRegex?: boolean;
     priority?: number;
-  }) => void;
-  onDelete: (id: string) => void;
+  }) => Promise<void>;
+  onDelete: (id: string) => Promise<void> | void;
+  onDeleteAll: () => Promise<void> | void;
 }
 
 export function CategoryRuleEditor({
@@ -33,21 +39,71 @@ export function CategoryRuleEditor({
   categories,
   onAdd,
   onDelete,
+  onDeleteAll,
 }: CategoryRuleEditorProps) {
   const [newPattern, setNewPattern] = useState("");
   const [newCategoryId, setNewCategoryId] = useState("");
   const [isRegex, setIsRegex] = useState(false);
+  const [error, setError] = useState("");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
-  function handleAdd() {
+  const leafCategories = sortCategoriesByDisplayName(getLeafCategories(categories));
+  const categoryLabelById = new Map(
+    categories.map((category) => [category.id, getCategoryDisplayName(category)])
+  );
+
+  async function handleAdd() {
     if (!newPattern || !newCategoryId) return;
-    onAdd({
-      categoryId: newCategoryId,
-      matchPattern: newPattern,
-      isRegex,
-    });
-    setNewPattern("");
-    setNewCategoryId("");
-    setIsRegex(false);
+
+    setError("");
+
+    try {
+      await onAdd({
+        categoryId: newCategoryId,
+        matchPattern: newPattern,
+        isRegex,
+      });
+      setNewPattern("");
+      setNewCategoryId("");
+      setIsRegex(false);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    }
+  }
+
+  async function handleDelete(ruleId: string) {
+    setError("");
+    setPendingDeleteId(ruleId);
+
+    try {
+      await onDelete(ruleId);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setPendingDeleteId(null);
+    }
+  }
+
+  async function handleDeleteAll() {
+    if (rules.length === 0) {
+      return;
+    }
+
+    if (!confirm("Delete all auto-categorization rules?")) {
+      return;
+    }
+
+    setError("");
+    setIsDeletingAll(true);
+
+    try {
+      await onDeleteAll();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setIsDeletingAll(false);
+    }
   }
 
   return (
@@ -68,9 +124,9 @@ export function CategoryRuleEditor({
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
-              {categories.map((cat) => (
+              {leafCategories.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
+                  {getCategoryDisplayName(cat)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -80,11 +136,27 @@ export function CategoryRuleEditor({
           <Switch checked={isRegex} onCheckedChange={setIsRegex} />
           <Label className="text-xs">Regex</Label>
         </div>
-        <Button size="sm" onClick={handleAdd} disabled={!newPattern || !newCategoryId}>
+        <Button
+          size="sm"
+          onClick={handleAdd}
+          disabled={!newPattern || !newCategoryId || isDeletingAll}
+        >
           <Plus className="h-3 w-3" />
           Add
         </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          className="text-white disabled:opacity-100 disabled:bg-destructive/55 disabled:text-white"
+          onClick={handleDeleteAll}
+          disabled={rules.length === 0 || isDeletingAll || pendingDeleteId !== null}
+        >
+          <Trash2 className="h-3 w-3" />
+          {isDeletingAll ? "Deleting..." : "Delete All"}
+        </Button>
       </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="space-y-2">
         {rules.map((rule) => (
@@ -97,7 +169,7 @@ export function CategoryRuleEditor({
                 {rule.matchPattern}
               </code>
               <span className="text-muted-foreground">→</span>
-              <span>{rule.categoryName ?? rule.categoryId}</span>
+              <span>{categoryLabelById.get(rule.categoryId) ?? rule.categoryName ?? rule.categoryId}</span>
               {rule.isRegex && (
                 <span className="text-xs text-muted-foreground">(regex)</span>
               )}
@@ -106,7 +178,8 @@ export function CategoryRuleEditor({
               variant="ghost"
               size="icon"
               className="text-destructive h-7 w-7"
-              onClick={() => onDelete(rule.id)}
+              disabled={isDeletingAll || pendingDeleteId !== null}
+              onClick={() => handleDelete(rule.id)}
             >
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -115,4 +188,12 @@ export function CategoryRuleEditor({
       </div>
     </div>
   );
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Request failed";
 }

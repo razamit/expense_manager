@@ -1,16 +1,53 @@
 import { prisma } from "@/lib/prisma";
-import type { Category } from "@prisma/client";
+import type { Category, Prisma } from "@prisma/client";
+
+const categoryMetadataInclude = {
+  parent: {
+    select: {
+      id: true,
+      name: true,
+      parentId: true,
+    },
+  },
+  _count: {
+    select: {
+      transactions: true,
+      children: true,
+      rules: true,
+    },
+  },
+} satisfies Prisma.CategoryInclude;
+
+export type CategoryWithMetadata = Prisma.CategoryGetPayload<{
+  include: typeof categoryMetadataInclude;
+}>;
 
 export class CategoryRepository {
-  static async findAll(): Promise<Category[]> {
+  static async findAll(): Promise<CategoryWithMetadata[]> {
     return prisma.category.findMany({
       orderBy: { name: "asc" },
-      include: { _count: { select: { transactions: true } } },
+      include: categoryMetadataInclude,
     });
   }
 
   static async findById(id: string): Promise<Category | null> {
     return prisma.category.findUnique({ where: { id } });
+  }
+
+  static async findByIdWithMetadata(
+    id: string
+  ): Promise<CategoryWithMetadata | null> {
+    return prisma.category.findUnique({
+      where: { id },
+      include: categoryMetadataInclude,
+    });
+  }
+
+  static async findByParentId(parentId: string): Promise<Category[]> {
+    return prisma.category.findMany({
+      where: { parentId },
+      orderBy: { name: "asc" },
+    });
   }
 
   static async create(data: {
@@ -36,6 +73,9 @@ export class CategoryRepository {
   static async findWithSpending(startDate: Date, endDate: Date) {
     return prisma.category.findMany({
       include: {
+        children: {
+          select: { id: true },
+        },
         transactions: {
           where: {
             date: { gte: startDate, lte: endDate },
@@ -53,6 +93,9 @@ export class CategoryRepository {
   static async findWithIncome(startDate: Date, endDate: Date) {
     return prisma.category.findMany({
       include: {
+        children: {
+          select: { id: true },
+        },
         transactions: {
           where: {
             date: { gte: startDate, lte: endDate },

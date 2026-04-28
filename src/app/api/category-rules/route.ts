@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CategoryRuleRepository } from "@/repositories/CategoryRuleRepository";
 import { CategoryManager } from "@/managers/CategoryManager";
+import {
+  CategoryHierarchyError,
+  CategoryHierarchyManager,
+} from "@/managers/CategoryHierarchyManager";
 
 export async function GET() {
   const rules = await CategoryRuleRepository.findAll();
@@ -20,43 +24,65 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { categoryId, matchField, matchPattern, isRegex, priority } = body;
+  try {
+    const body = await request.json();
+    const { categoryId, matchField, matchPattern, isRegex, priority } = body;
 
-  if (!categoryId || !matchPattern) {
-    return NextResponse.json(
-      { error: "categoryId and matchPattern are required" },
-      { status: 400 }
-    );
+    if (!categoryId || !matchPattern) {
+      return NextResponse.json(
+        { error: "categoryId and matchPattern are required" },
+        { status: 400 }
+      );
+    }
+
+    await CategoryHierarchyManager.assertLeafCategory(categoryId);
+
+    const rule = await CategoryRuleRepository.create({
+      categoryId,
+      matchField,
+      matchPattern,
+      isRegex,
+      priority,
+    });
+
+    CategoryManager.invalidateCache();
+    return NextResponse.json(rule);
+  } catch (error) {
+    return handleRuleError(error);
   }
-
-  const rule = await CategoryRuleRepository.create({
-    categoryId,
-    matchField,
-    matchPattern,
-    isRegex,
-    priority,
-  });
-
-  CategoryManager.invalidateCache();
-  return NextResponse.json(rule);
 }
 
 export async function PUT(request: NextRequest) {
-  const body = await request.json();
-  const { id, ...data } = body;
+  try {
+    const body = await request.json();
+    const { id, ...data } = body;
 
-  if (!id) {
-    return NextResponse.json({ error: "id is required" }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    if (data.categoryId) {
+      await CategoryHierarchyManager.assertLeafCategory(data.categoryId);
+    }
+
+    const rule = await CategoryRuleRepository.update(id, data);
+    CategoryManager.invalidateCache();
+    return NextResponse.json(rule);
+  } catch (error) {
+    return handleRuleError(error);
   }
-
-  const rule = await CategoryRuleRepository.update(id, data);
-  CategoryManager.invalidateCache();
-  return NextResponse.json(rule);
 }
 
 export async function DELETE(request: NextRequest) {
   const { searchParams } = new URL(request.url);
+  const deleteAll = searchParams.get("all") === "true";
+
+  if (deleteAll) {
+    const deleted = await CategoryRuleRepository.removeAll();
+    CategoryManager.invalidateCache();
+    return NextResponse.json({ success: true, deleted });
+  }
+
   const id = searchParams.get("id");
   if (!id) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
@@ -65,4 +91,18 @@ export async function DELETE(request: NextRequest) {
   await CategoryRuleRepository.remove(id);
   CategoryManager.invalidateCache();
   return NextResponse.json({ success: true });
+}
+
+function handleRuleError(error: unknown) {
+  if (error instanceof CategoryHierarchyError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.statusCode }
+    );
+  }
+
+  return NextResponse.json(
+    { error: "Unexpected category rule error" },
+    { status: 500 }
+  );
 }

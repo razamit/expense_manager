@@ -2,6 +2,7 @@ import { TransactionRepository } from "@/repositories/TransactionRepository";
 import { CategoryRepository } from "@/repositories/CategoryRepository";
 import { prisma } from "@/lib/prisma";
 import { getMonthRange } from "@/lib/date-utils";
+import { CategoryHierarchyManager } from "@/managers/CategoryHierarchyManager";
 import type {
   SpendingByCategory,
   IncomeExpenseTrend,
@@ -14,35 +15,7 @@ export class StatisticsManager {
     month: number
   ): Promise<SpendingByCategory[]> {
     const { startDate, endDate } = getMonthRange(year, month);
-    const categories = await CategoryRepository.findWithSpending(startDate, endDate);
-
-    const totalExpense = categories.reduce(
-      (sum, cat) =>
-        sum +
-        cat.transactions.reduce(
-          (s, t) => s + Math.abs(t.chargedAmount),
-          0
-        ),
-      0
-    );
-
-    return categories
-      .map((cat) => {
-        const totalAmount = cat.transactions.reduce(
-          (s, t) => s + Math.abs(t.chargedAmount),
-          0
-        );
-        return {
-          categoryId: cat.id,
-          categoryName: cat.name,
-          categoryColor: cat.color ?? "#737373",
-          totalAmount,
-          transactionCount: cat.transactions.length,
-          percentOfTotal: totalExpense > 0 ? (totalAmount / totalExpense) * 100 : 0,
-        };
-      })
-      .filter((c) => c.totalAmount > 0)
-      .sort((a, b) => b.totalAmount - a.totalAmount);
+    return this.getSpendingByDateRange(startDate, endDate);
   }
 
   static async getIncomeByCategory(
@@ -50,31 +23,23 @@ export class StatisticsManager {
     month: number
   ): Promise<SpendingByCategory[]> {
     const { startDate, endDate } = getMonthRange(year, month);
+    return this.getIncomeByDateRange(startDate, endDate);
+  }
+
+  static async getSpendingByDateRange(
+    startDate: Date,
+    endDate: Date
+  ): Promise<SpendingByCategory[]> {
+    const categories = await CategoryRepository.findWithSpending(startDate, endDate);
+    return buildCategoryRollups(categories, (txn) => Math.abs(txn.chargedAmount));
+  }
+
+  static async getIncomeByDateRange(
+    startDate: Date,
+    endDate: Date
+  ): Promise<SpendingByCategory[]> {
     const categories = await CategoryRepository.findWithIncome(startDate, endDate);
-
-    const totalIncome = categories.reduce(
-      (sum, cat) =>
-        sum + cat.transactions.reduce((s, t) => s + t.chargedAmount, 0),
-      0
-    );
-
-    return categories
-      .map((cat) => {
-        const totalAmount = cat.transactions.reduce(
-          (s, t) => s + t.chargedAmount,
-          0
-        );
-        return {
-          categoryId: cat.id,
-          categoryName: cat.name,
-          categoryColor: cat.color ?? "#737373",
-          totalAmount,
-          transactionCount: cat.transactions.length,
-          percentOfTotal: totalIncome > 0 ? (totalAmount / totalIncome) * 100 : 0,
-        };
-      })
-      .filter((c) => c.totalAmount > 0)
-      .sort((a, b) => b.totalAmount - a.totalAmount);
+    return buildCategoryRollups(categories, (txn) => txn.chargedAmount);
   }
 
   static async getIncomeExpenseTrend(
@@ -122,39 +87,95 @@ export class StatisticsManager {
     const { startDate, endDate } = getMonthRange(year, month);
 
     const budgets = await prisma.budget.findMany({
-      include: {
-        category: {
-          include: {
-            transactions: {
-              where: {
-                date: { gte: startDate, lte: endDate },
-                chargedAmount: { lt: 0 },
-                isExcluded: false,
-              },
-              select: { chargedAmount: true },
-            },
-          },
-        },
-      },
+      include: { category: true },
     });
 
-    return budgets.map((budget) => {
-      const currentSpent = budget.category.transactions.reduce(
-        (sum, t) => sum + Math.abs(t.chargedAmount),
+    return Promise.all(
+      budgets.map(async (budget) => {
+        const categoryIds = await CategoryHierarchyManager.resolveFilterCategoryIds(
+          budget.categoryId
+        );
+        const spending = await prisma.transaction.aggregate({
+          where: {
+            categoryId: { in: categoryIds },
+            date: { gte: startDate, lte: endDate },
+            chargedAmount: { lt: 0 },
+            isExcluded: false,
+          },
+          _sum: { chargedAmount: true },
+        });
+
+        const currentSpent = Math.abs(spending._sum.chargedAmount ?? 0);
+
+        return {
+          id: budget.id,
+          categoryId: budget.categoryId,
+          categoryName: budget.category.name,
+          categoryColor: budget.category.color ?? "#737373",
+          monthlyLimit: budget.monthlyLimit,
+          currentSpent,
+          percentUsed:
+            budget.monthlyLimit > 0
+              ? (currentSpent / budget.monthlyLimit) * 100
+              : 0,
+        };
+      })
+    );
+  }
+}
+
+type CategoryRollupSource = Awaited<
+  ReturnType<typeof CategoryRepository.findWithSpending>
+>[number];
+
+function buildCategoryRollups(
+  categories: CategoryRollupSource[],
+  amountForTransaction: (transaction: { chargedAmount: number }) => number
+): SpendingByCategory[] {
+  const childrenByParent = categories.reduce<Map<string, CategoryRollupSource[]>>(
+    (map, category) => {
+      if (!category.parentId) {
+        return map;
+      }
+
+      const children = map.get(category.parentId) ?? [];
+      children.push(category);
+      map.set(category.parentId, children);
+      return map;
+    },
+    new Map()
+  );
+
+  const summaries = categories
+    .filter((category) => category.parentId === null)
+    .map((category) => {
+      const descendants = childrenByParent.get(category.id) ?? [];
+      const transactions = [category, ...descendants].flatMap(
+        (entry) => entry.transactions
+      );
+      const totalAmount = transactions.reduce(
+        (sum, transaction) => sum + amountForTransaction(transaction),
         0
       );
+
       return {
-        id: budget.id,
-        categoryId: budget.categoryId,
-        categoryName: budget.category.name,
-        categoryColor: budget.category.color ?? "#737373",
-        monthlyLimit: budget.monthlyLimit,
-        currentSpent,
-        percentUsed:
-          budget.monthlyLimit > 0
-            ? (currentSpent / budget.monthlyLimit) * 100
-            : 0,
+        categoryId: category.id,
+        categoryName: category.name,
+        categoryColor: category.color ?? "#737373",
+        totalAmount,
+        transactionCount: transactions.length,
       };
-    });
-  }
+    })
+    .filter((summary) => summary.totalAmount > 0)
+    .sort((left, right) => right.totalAmount - left.totalAmount);
+
+  const totalAmount = summaries.reduce(
+    (sum, category) => sum + category.totalAmount,
+    0
+  );
+
+  return summaries.map((summary) => ({
+    ...summary,
+    percentOfTotal: totalAmount > 0 ? (summary.totalAmount / totalAmount) * 100 : 0,
+  }));
 }

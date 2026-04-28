@@ -14,6 +14,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CategoryList } from "@/components/categories/CategoryList";
 import { CategoryRuleEditor } from "@/components/categories/CategoryRuleEditor";
 import { useCategoriesViewModel } from "@/viewmodels/useCategoriesViewModel";
@@ -36,28 +43,114 @@ export default function CategoriesPage() {
   const [editCategory, setEditCategory] = useState<CategoryDTO | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState("#737373");
+  const [selectedParentId, setSelectedParentId] = useState("none");
+  const [formError, setFormError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleAddCategory() {
-    if (!newCategoryName) return;
-    vm.addCategory({ name: newCategoryName, color: newCategoryColor });
-    setNewCategoryName("");
-    setShowAddDialog(false);
+  const rootCategories = vm.categories.filter((category) => category.parentId === null);
+  const availableParentCategories = rootCategories.filter((category) => {
+    if (!editCategory) {
+      return true;
+    }
+
+    return category.id !== editCategory.id;
+  });
+  const editCategoryHasChildren = Boolean(editCategory && (editCategory.childCount ?? 0) > 0);
+
+  async function handleAddCategory() {
+    const name = newCategoryName.trim();
+    if (!name) {
+      setFormError("Name is required");
+      return;
+    }
+
+    setFormError("");
+    setIsSubmitting(true);
+
+    try {
+      await vm.addCategory({
+        name,
+        color: newCategoryColor,
+        parentId: selectedParentId === "none" ? null : selectedParentId,
+      });
+      closeDialog();
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  function handleEditCategory() {
-    if (!editCategory || !newCategoryName) return;
-    vm.updateCategory(editCategory.id, {
-      name: newCategoryName,
-      color: newCategoryColor,
-    });
-    setEditCategory(null);
-    setNewCategoryName("");
+  async function handleEditCategory() {
+    if (!editCategory) {
+      return;
+    }
+
+    const name = newCategoryName.trim();
+    if (!name) {
+      setFormError("Name is required");
+      return;
+    }
+
+    if (editCategoryHasChildren && selectedParentId !== "none") {
+      setFormError("A category with subcategories must stay a main category.");
+      return;
+    }
+
+    setFormError("");
+    setIsSubmitting(true);
+
+    try {
+      await vm.updateCategory(editCategory.id, {
+        name,
+        color: newCategoryColor,
+        parentId: selectedParentId === "none" ? null : selectedParentId,
+      });
+      closeDialog();
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function openEditDialog(category: CategoryDTO) {
     setEditCategory(category);
+    setShowAddDialog(false);
     setNewCategoryName(category.name);
     setNewCategoryColor(category.color ?? "#737373");
+    setSelectedParentId(category.parentId ?? "none");
+    setFormError("");
+  }
+
+  function openAddDialog() {
+    setActionError("");
+    setEditCategory(null);
+    setShowAddDialog(true);
+    setNewCategoryName("");
+    setNewCategoryColor(randomCategoryColor());
+    setSelectedParentId("none");
+    setFormError("");
+  }
+
+  function closeDialog() {
+    setShowAddDialog(false);
+    setEditCategory(null);
+    setNewCategoryName("");
+    setSelectedParentId("none");
+    setFormError("");
+    setIsSubmitting(false);
+  }
+
+  async function handleDeleteCategory(id: string) {
+    setActionError("");
+
+    try {
+      await vm.removeCategory(id);
+    } catch (error) {
+      setActionError(getErrorMessage(error));
+    }
   }
 
   if (vm.isLoading) {
@@ -82,19 +175,17 @@ export default function CategoriesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Categories</CardTitle>
-              <Button size="sm" onClick={() => {
-                setNewCategoryColor(randomCategoryColor());
-                setShowAddDialog(true);
-              }}>
+              <Button size="sm" onClick={openAddDialog}>
                 <Plus className="h-4 w-4" />
                 Add
               </Button>
             </CardHeader>
             <CardContent>
+              {actionError && <p className="mb-4 text-sm text-destructive">{actionError}</p>}
               <CategoryList
                 categories={vm.categories}
                 onEdit={openEditDialog}
-                onDelete={(id) => vm.removeCategory(id)}
+                onDelete={handleDeleteCategory}
               />
             </CardContent>
           </Card>
@@ -111,6 +202,7 @@ export default function CategoriesPage() {
                 categories={vm.categories}
                 onAdd={vm.addRule}
                 onDelete={vm.removeRule}
+                onDeleteAll={vm.removeAllRules}
               />
             </CardContent>
           </Card>
@@ -121,12 +213,11 @@ export default function CategoriesPage() {
         open={showAddDialog || editCategory !== null}
         onOpenChange={(v) => {
           if (!v) {
-            setShowAddDialog(false);
-            setEditCategory(null);
+            closeDialog();
           }
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editCategory ? "Edit Category" : "Add Category"}
@@ -140,6 +231,35 @@ export default function CategoriesPage() {
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="Category name"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Parent Category</Label>
+              <Select
+                value={selectedParentId}
+                onValueChange={setSelectedParentId}
+                disabled={editCategoryHasChildren}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Main category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Main category</SelectItem>
+                  {availableParentCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {editCategoryHasChildren ? (
+                <p className="text-xs text-muted-foreground">
+                  This category already has subcategories, so it must stay a main category.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Choose a main category to make this a subcategory.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Color</Label>
@@ -157,25 +277,32 @@ export default function CategoriesPage() {
                 />
               </div>
             </div>
+            {formError && <p className="text-sm text-destructive">{formError}</p>}
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setShowAddDialog(false);
-                setEditCategory(null);
-              }}
+              onClick={closeDialog}
             >
               Cancel
             </Button>
             <Button
               onClick={editCategory ? handleEditCategory : handleAddCategory}
+              disabled={isSubmitting || !newCategoryName.trim()}
             >
-              {editCategory ? "Save" : "Add"}
+              {isSubmitting ? "Saving..." : editCategory ? "Save" : "Add"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Request failed";
 }

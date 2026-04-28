@@ -1,10 +1,16 @@
 import { TransactionRepository } from "@/repositories/TransactionRepository";
 import type { TransactionDTO, TransactionFilters } from "@/types";
 import { prisma } from "@/lib/prisma";
+import { CategoryHierarchyManager } from "@/managers/CategoryHierarchyManager";
 
 export class TransactionManager {
   static async getTransactions(filters: TransactionFilters) {
-    const result = await TransactionRepository.findWithFilters(filters);
+    const categoryIds =
+      filters.categoryId && !filters.uncategorizedOnly
+        ? await CategoryHierarchyManager.resolveFilterCategoryIds(filters.categoryId)
+        : undefined;
+
+    const result = await TransactionRepository.findWithFilters(filters, categoryIds);
 
     const transactions: TransactionDTO[] = result.transactions.map((txn) => ({
       id: txn.id,
@@ -45,6 +51,10 @@ export class TransactionManager {
     transactionId: string,
     categoryId: string | null
   ): Promise<void> {
+    if (categoryId) {
+      await CategoryHierarchyManager.assertLeafCategory(categoryId);
+    }
+
     await TransactionRepository.updateCategory(transactionId, categoryId, false);
   }
 
@@ -89,7 +99,15 @@ export class TransactionManager {
 
   static async exportCSV(filters: TransactionFilters): Promise<string> {
     const allFilters = { ...filters, page: 1, pageSize: 100000 };
-    const result = await TransactionRepository.findWithFilters(allFilters);
+    const categoryIds =
+      allFilters.categoryId && !allFilters.uncategorizedOnly
+        ? await CategoryHierarchyManager.resolveFilterCategoryIds(allFilters.categoryId)
+        : undefined;
+
+    const result = await TransactionRepository.findWithFilters(
+      allFilters,
+      categoryIds
+    );
 
     const headers = [
       "Date", "Description", "Amount", "Currency", "Direction",
@@ -115,6 +133,8 @@ export class TransactionManager {
     transactionIds: string[],
     categoryId: string
   ): Promise<number> {
+    await CategoryHierarchyManager.assertLeafCategory(categoryId);
+
     const result = await prisma.transaction.updateMany({
       where: { id: { in: transactionIds } },
       data: { categoryId, isCategorizedByRule: false },

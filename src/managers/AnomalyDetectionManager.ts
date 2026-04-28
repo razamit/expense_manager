@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getMonthRange, getMonthsAgo } from "@/lib/date-utils";
 import { TransactionRepository } from "@/repositories/TransactionRepository";
+import { StatisticsManager } from "@/managers/StatisticsManager";
 import type { AnomalyAlert } from "@/types";
 
 export class AnomalyDetectionManager {
@@ -26,7 +27,7 @@ export class AnomalyDetectionManager {
     const alerts: AnomalyAlert[] = [];
     const { startDate, endDate } = getMonthRange(year, month);
 
-    const currentSpending = await TransactionRepository.aggregateByCategory(
+    const currentSpending = await StatisticsManager.getSpendingByDateRange(
       startDate,
       endDate
     );
@@ -34,32 +35,26 @@ export class AnomalyDetectionManager {
     const threeMonthsAgo = getMonthsAgo(3);
     const lastMonthEnd = new Date(year, month, 0, 23, 59, 59, 999);
 
-    const historicalSpending = await TransactionRepository.aggregateByCategory(
+    const historicalSpending = await StatisticsManager.getSpendingByDateRange(
       threeMonthsAgo,
       lastMonthEnd
     );
 
     const historicalAvg = new Map<string, number>();
     for (const item of historicalSpending) {
-      if (!item.categoryId) continue;
-      const avg = Math.abs(item._sum.chargedAmount ?? 0) / 3;
+      const avg = item.totalAmount / 3;
       historicalAvg.set(item.categoryId, avg);
     }
 
     for (const item of currentSpending) {
-      if (!item.categoryId) continue;
-      const currentAmount = Math.abs(item._sum.chargedAmount ?? 0);
+      const currentAmount = item.totalAmount;
       const avgAmount = historicalAvg.get(item.categoryId);
 
       if (avgAmount && avgAmount > 0 && currentAmount > avgAmount * 1.5) {
-        const category = await prisma.category.findUnique({
-          where: { id: item.categoryId },
-        });
-
         alerts.push({
           type: "high_spending",
           severity: currentAmount > avgAmount * 2 ? "alert" : "warning",
-          title: `High spending in ${category?.name ?? "Unknown"}`,
+          title: `High spending in ${item.categoryName}`,
           description: `Spent ${currentAmount.toFixed(0)} ILS vs ${avgAmount.toFixed(0)} ILS average`,
           categoryId: item.categoryId,
           amount: currentAmount,

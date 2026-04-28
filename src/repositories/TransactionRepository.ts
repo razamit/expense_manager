@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { Transaction, Prisma } from "@prisma/client";
 import type { TransactionFilters } from "@/types";
 
-type UpsertData = {
+export type ImportedTransactionData = {
   accountId: string;
   externalId: string | null;
   date: Date;
@@ -24,7 +24,10 @@ type UpsertData = {
 };
 
 export class TransactionRepository {
-  static async findWithFilters(filters: TransactionFilters) {
+  static async findWithFilters(
+    filters: TransactionFilters,
+    categoryIds?: string[]
+  ) {
     const where: Prisma.TransactionWhereInput = {};
     const page = filters.page ?? 1;
     const pageSize = filters.pageSize ?? 50;
@@ -36,7 +39,9 @@ export class TransactionRepository {
       where.date = { ...((where.date as object) ?? {}), lte: new Date(filters.endDate) };
     }
     if (filters.accountId) where.accountId = filters.accountId;
-    if (filters.categoryId) where.categoryId = filters.categoryId;
+    if (filters.categoryId) {
+      where.categoryId = categoryIds?.length ? { in: categoryIds } : filters.categoryId;
+    }
     if (filters.direction) where.direction = filters.direction;
     if (filters.status) where.status = filters.status;
     if (filters.uncategorizedOnly) where.categoryId = null;
@@ -72,55 +77,78 @@ export class TransactionRepository {
     });
   }
 
-  static async upsertFromScrape(
-    data: UpsertData
-  ): Promise<{ transaction: Transaction; isNew: boolean }> {
-    const existing = await this.findExistingTransaction(data);
-
-    if (existing) {
-      const updated = await this.updateExistingTransaction(existing, data);
-      return { transaction: updated, isNew: false };
+  static buildImportMatchKey(data: ImportedTransactionData): string {
+    if (data.externalId) {
+      return JSON.stringify({
+        accountId: data.accountId,
+        externalId: data.externalId,
+        date: data.date.toISOString(),
+        chargedAmount: data.chargedAmount,
+      });
     }
 
-    const created = await prisma.transaction.create({ data });
-    return { transaction: created, isNew: true };
+    return JSON.stringify({
+      accountId: data.accountId,
+      date: data.date.toISOString(),
+      chargedAmount: data.chargedAmount,
+      description: data.description,
+    });
   }
 
-  private static async findExistingTransaction(
-    data: UpsertData
-  ): Promise<Transaction | null> {
+  static async findMatchingTransactions(
+    data: ImportedTransactionData
+  ): Promise<Transaction[]> {
     if (data.externalId) {
-      const byExternalId = await prisma.transaction.findFirst({
+      return prisma.transaction.findMany({
         where: {
           accountId: data.accountId,
           externalId: data.externalId,
           date: data.date,
+          chargedAmount: data.chargedAmount,
         },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       });
-      if (byExternalId) return byExternalId;
     }
 
-    return prisma.transaction.findFirst({
+    return prisma.transaction.findMany({
       where: {
         accountId: data.accountId,
         date: data.date,
         chargedAmount: data.chargedAmount,
         description: data.description,
       },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     });
   }
 
-  private static async updateExistingTransaction(
-    existing: Transaction,
-    data: UpsertData
+  static async createFromScrape(
+    data: ImportedTransactionData
+  ): Promise<Transaction> {
+    return prisma.transaction.create({ data });
+  }
+
+  static async updateFromScrape(
+    transactionId: string,
+    data: ImportedTransactionData
   ): Promise<Transaction> {
     return prisma.transaction.update({
-      where: { id: existing.id },
+      where: { id: transactionId },
       data: {
+        originalAmount: data.originalAmount,
+        originalCurrency: data.originalCurrency,
+        chargedCurrency: data.chargedCurrency,
+        description: data.description,
+        memo: data.memo,
+        bankCategory: data.bankCategory,
+        rawTransaction: data.rawTransaction,
+        transactionType: data.transactionType,
+        installmentNumber: data.installmentNumber,
+        installmentTotal: data.installmentTotal,
         status: data.status,
+        direction: data.direction,
         processedDate: data.processedDate,
         scrapeRunId: data.scrapeRunId,
-        externalId: data.externalId ?? existing.externalId,
+        externalId: data.externalId ?? undefined,
       },
     });
   }

@@ -10,6 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  getCategoryDisplayName,
+  sortCategoriesByDisplayName,
+} from "@/lib/category-hierarchy";
 import type { TransactionFilters, CategoryDTO, AccountDTO } from "@/types";
 
 interface TransactionFiltersBarProps {
@@ -26,6 +30,8 @@ export function TransactionFiltersBar({
   onChange,
   onExport,
 }: TransactionFiltersBarProps) {
+  const sortedCategories = sortCategoriesByDisplayName(categories);
+
   return (
     <div className="flex flex-wrap gap-3 items-center">
       <div className="relative flex-1 min-w-[200px]">
@@ -65,9 +71,9 @@ export function TransactionFiltersBar({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Categories</SelectItem>
-          {categories.map((cat) => (
+          {sortedCategories.map((cat) => (
             <SelectItem key={cat.id} value={cat.id}>
-              {cat.name}
+              {getCategoryDisplayName(cat)}
             </SelectItem>
           ))}
         </SelectContent>

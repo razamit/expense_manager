@@ -53,7 +53,7 @@ model Transaction {
   category  Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   scrapeRun ScrapeRun? @relation(fields: [scrapeRunId], references: [id], onDelete: SetNull)
 
-  @@unique([accountId, externalId, date, chargedAmount])
+  @@index([accountId, externalId, date, chargedAmount])
   @@index([accountId, date, chargedAmount, description])
   @@index([date])
   @@index([categoryId])

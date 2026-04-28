@@ -76,6 +76,7 @@ export default function TransactionsPage() {
         categories={vm.categories}
         onClose={() => setSelectedTransaction(null)}
         onAssign={vm.assignCategory}
+        onCreateCategory={vm.createCategory}
       />
     </div>
   );

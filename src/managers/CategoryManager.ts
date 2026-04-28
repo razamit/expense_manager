@@ -2,6 +2,7 @@ import { CategoryRuleRepository } from "@/repositories/CategoryRuleRepository";
 import { TransactionRepository } from "@/repositories/TransactionRepository";
 import type { CategoryRule } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { CategoryHierarchyManager } from "@/managers/CategoryHierarchyManager";
 
 export class CategoryManager {
   private static rulesCache: CategoryRule[] | null = null;
@@ -75,6 +76,8 @@ export class CategoryManager {
     categoryId: string,
     pattern?: string
   ): Promise<{ autoCategorized: number }> {
+    await CategoryHierarchyManager.assertLeafCategory(categoryId);
+
     const txn = await prisma.transaction.findUnique({
       where: { id: transactionId },
     });

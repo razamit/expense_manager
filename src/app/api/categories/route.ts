@@ -1,69 +1,86 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CategoryRepository } from "@/repositories/CategoryRepository";
+import {
+  CategoryHierarchyError,
+  CategoryHierarchyManager,
+} from "@/managers/CategoryHierarchyManager";
 
 export async function GET() {
-  const categories = await CategoryRepository.findAll();
-  return NextResponse.json(
-    categories.map((c) => ({
-      id: c.id,
-      name: c.name,
-      icon: c.icon,
-      color: c.color,
-      parentId: c.parentId,
-      isSystem: c.isSystem,
-      transactionCount: (c as Record<string, unknown>)._count
-        ? ((c as Record<string, unknown>)._count as Record<string, number>).transactions
-        : 0,
-    }))
-  );
+  const categories = await CategoryHierarchyManager.listCategories();
+  return NextResponse.json(categories);
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { name, icon, color, parentId } = body;
+  try {
+    const body = await request.json();
+    const { name, icon, color, parentId } = body;
 
-  if (!name) {
-    return NextResponse.json(
-      { error: "name is required" },
-      { status: 400 }
-    );
+    if (!name) {
+      return NextResponse.json(
+        { error: "name is required" },
+        { status: 400 }
+      );
+    }
+
+    const category = await CategoryHierarchyManager.createCategory({
+      name,
+      icon,
+      color,
+      parentId,
+    });
+
+    return NextResponse.json(category);
+  } catch (error) {
+    return handleCategoryError(error);
   }
-
-  const category = await CategoryRepository.create({
-    name,
-    icon,
-    color,
-    parentId,
-  });
-
-  return NextResponse.json(category);
 }
 
 export async function PUT(request: NextRequest) {
-  const body = await request.json();
-  const { id, name, icon, color, parentId } = body;
+  try {
+    const body = await request.json();
+    const { id, name, icon, color, parentId } = body;
 
-  if (!id) {
-    return NextResponse.json({ error: "id is required" }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    const category = await CategoryHierarchyManager.updateCategory(id, {
+      ...(name !== undefined && { name }),
+      ...(icon !== undefined && { icon }),
+      ...(color !== undefined && { color }),
+      ...(parentId !== undefined && { parentId }),
+    });
+
+    return NextResponse.json(category);
+  } catch (error) {
+    return handleCategoryError(error);
   }
-
-  const category = await CategoryRepository.update(id, {
-    ...(name !== undefined && { name }),
-    ...(icon !== undefined && { icon }),
-    ...(color !== undefined && { color }),
-    ...(parentId !== undefined && { parentId }),
-  });
-
-  return NextResponse.json(category);
 }
 
 export async function DELETE(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  if (!id) {
-    return NextResponse.json({ error: "id is required" }, { status: 400 });
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    await CategoryHierarchyManager.deleteCategory(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleCategoryError(error);
+  }
+}
+
+function handleCategoryError(error: unknown) {
+  if (error instanceof CategoryHierarchyError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.statusCode }
+    );
   }
 
-  await CategoryRepository.remove(id);
-  return NextResponse.json({ success: true });
+  return NextResponse.json(
+    { error: "Unexpected category error" },
+    { status: 500 }
+  );
 }
