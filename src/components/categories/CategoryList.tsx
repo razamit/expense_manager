@@ -8,7 +8,7 @@ import type { CategoryDTO } from "@/types";
 interface CategoryListProps {
   categories: CategoryDTO[];
   onEdit: (category: CategoryDTO) => void;
-  onDelete: (id: string) => void;
+  onDelete: (category: CategoryDTO) => void;
 }
 
 export function CategoryList({
@@ -74,7 +74,7 @@ function CategoryRow({
 }: {
   category: CategoryDTO;
   onEdit: (category: CategoryDTO) => void;
-  onDelete: (id: string) => void;
+  onDelete: (category: CategoryDTO) => void;
   isChild?: boolean;
 }) {
   return (
@@ -111,16 +111,14 @@ function CategoryRow({
         <Button variant="ghost" size="icon" onClick={() => onEdit(category)}>
           <Edit className="h-3 w-3" />
         </Button>
-        {!category.isSystem && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive"
-            onClick={() => onDelete(category.id)}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-destructive"
+          onClick={() => onDelete(category)}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
       </div>
     </div>
   );

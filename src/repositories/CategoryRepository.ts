@@ -70,6 +70,25 @@ export class CategoryRepository {
     await prisma.category.delete({ where: { id } });
   }
 
+  static async removeTree(rootId: string): Promise<string[]> {
+    const categories = await prisma.category.findMany({
+      select: {
+        id: true,
+        parentId: true,
+      },
+    });
+
+    const deletionOrder = getCategoryDeletionOrder(rootId, categories);
+
+    await prisma.$transaction(
+      deletionOrder.map((categoryId) =>
+        prisma.category.delete({ where: { id: categoryId } })
+      )
+    );
+
+    return deletionOrder;
+  }
+
   static async findWithSpending(startDate: Date, endDate: Date) {
     return prisma.category.findMany({
       include: {
@@ -109,4 +128,34 @@ export class CategoryRepository {
       orderBy: { name: "asc" },
     });
   }
+}
+
+function getCategoryDeletionOrder(
+  rootId: string,
+  categories: Array<{ id: string; parentId: string | null }>
+): string[] {
+  const childrenByParent = categories.reduce<Map<string, string[]>>((map, category) => {
+    if (!category.parentId) {
+      return map;
+    }
+
+    const childIds = map.get(category.parentId) ?? [];
+    childIds.push(category.id);
+    map.set(category.parentId, childIds);
+    return map;
+  }, new Map());
+
+  const deletionOrder: string[] = [];
+
+  function visit(categoryId: string) {
+    for (const childId of childrenByParent.get(categoryId) ?? []) {
+      visit(childId);
+    }
+
+    deletionOrder.push(categoryId);
+  }
+
+  visit(rootId);
+
+  return deletionOrder;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -24,7 +25,7 @@ import {
 import { CategoryList } from "@/components/categories/CategoryList";
 import { CategoryRuleEditor } from "@/components/categories/CategoryRuleEditor";
 import { useCategoriesViewModel } from "@/viewmodels/useCategoriesViewModel";
-import type { CategoryDTO } from "@/types";
+import type { CategoryDTO, CategoryRuleDTO } from "@/types";
 
 const CATEGORY_PALETTE = [
   "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16",
@@ -47,6 +48,9 @@ export default function CategoriesPage() {
   const [formError, setFormError] = useState("");
   const [actionError, setActionError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteCategory, setDeleteCategory] = useState<CategoryDTO | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   const rootCategories = vm.categories.filter((category) => category.parentId === null);
   const availableParentCategories = rootCategories.filter((category) => {
@@ -57,6 +61,9 @@ export default function CategoriesPage() {
     return category.id !== editCategory.id;
   });
   const editCategoryHasChildren = Boolean(editCategory && (editCategory.childCount ?? 0) > 0);
+  const deleteImpact = deleteCategory
+    ? buildCategoryDeleteImpact(deleteCategory.id, vm.categories, vm.rules)
+    : null;
 
   async function handleAddCategory() {
     const name = newCategoryName.trim();
@@ -143,13 +150,37 @@ export default function CategoriesPage() {
     setIsSubmitting(false);
   }
 
-  async function handleDeleteCategory(id: string) {
+  function openDeleteDialog(category: CategoryDTO) {
     setActionError("");
+    setDeleteError("");
+    setDeleteCategory(category);
+  }
+
+  function closeDeleteDialog() {
+    if (isDeletingCategory) {
+      return;
+    }
+
+    setDeleteCategory(null);
+    setDeleteError("");
+  }
+
+  async function handleDeleteCategory() {
+    if (!deleteCategory) {
+      return;
+    }
+
+    setActionError("");
+    setDeleteError("");
+    setIsDeletingCategory(true);
 
     try {
-      await vm.removeCategory(id);
+      await vm.removeCategory(deleteCategory.id);
+      setDeleteCategory(null);
     } catch (error) {
-      setActionError(getErrorMessage(error));
+      setDeleteError(getErrorMessage(error));
+    } finally {
+      setIsDeletingCategory(false);
     }
   }
 
@@ -185,7 +216,7 @@ export default function CategoriesPage() {
               <CategoryList
                 categories={vm.categories}
                 onEdit={openEditDialog}
-                onDelete={handleDeleteCategory}
+                onDelete={openDeleteDialog}
               />
             </CardContent>
           </Card>
@@ -295,8 +326,147 @@ export default function CategoriesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={deleteCategory !== null}
+        onOpenChange={(v) => {
+          if (!v) {
+            closeDeleteDialog();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              Delete {deleteCategory ? `"${deleteCategory.name}"` : "category"}?
+            </DialogTitle>
+            <DialogDescription>
+              This permanently removes the selected category and any nested categories.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteCategory && deleteImpact && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                <div className="flex gap-3">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                  <div className="space-y-2 text-sm">
+                    <p>
+                      {deleteImpact.totalCategoryCount === 1
+                        ? "This category will be deleted."
+                        : `This category and ${deleteImpact.descendantCount} subcategor${deleteImpact.descendantCount === 1 ? "y" : "ies"} will be deleted.`}
+                    </p>
+                    <p>
+                      {deleteImpact.transactionCount} transaction
+                      {deleteImpact.transactionCount === 1 ? "" : "s"} currently assigned to this category tree will become uncategorized.
+                    </p>
+                    <p>
+                      {deleteImpact.ruleCount} auto-categorization rule
+                      {deleteImpact.ruleCount === 1 ? "" : "s"} linked to these categories will be removed.
+                    </p>
+                    <p>Any budgets tied to these categories will also be deleted.</p>
+                    <p className="font-medium text-foreground">This action cannot be undone.</p>
+                  </div>
+                </div>
+              </div>
+
+              {deleteImpact.descendantNames.length > 0 && (
+                <div className="rounded-lg border bg-muted/20 px-4 py-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Also deleting
+                  </p>
+                  <p className="mt-2 text-sm" dir="auto">
+                    {deleteImpact.descendantNames.join(", ")}
+                  </p>
+                </div>
+              )}
+
+              {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDeleteDialog} disabled={isDeletingCategory}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteCategory}
+              disabled={isDeletingCategory}
+            >
+              {isDeletingCategory ? "Deleting..." : "Delete Category"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+type CategoryDeleteImpact = {
+  totalCategoryCount: number;
+  descendantCount: number;
+  transactionCount: number;
+  ruleCount: number;
+  descendantNames: string[];
+};
+
+function buildCategoryDeleteImpact(
+  rootCategoryId: string,
+  categories: CategoryDTO[],
+  rules: CategoryRuleDTO[]
+): CategoryDeleteImpact {
+  const categoriesById = new Map(categories.map((category) => [category.id, category]));
+  const categoryIds = collectCategoryTreeIds(rootCategoryId, categories);
+  const categoryIdSet = new Set(categoryIds);
+  const descendantNames = categoryIds
+    .slice(1)
+    .map((categoryId) => categoriesById.get(categoryId)?.name)
+    .filter((name): name is string => Boolean(name));
+
+  const transactionCount = categoryIds.reduce(
+    (total, categoryId) => total + (categoriesById.get(categoryId)?.transactionCount ?? 0),
+    0
+  );
+  const ruleCount = rules.filter((rule) => categoryIdSet.has(rule.categoryId)).length;
+
+  return {
+    totalCategoryCount: categoryIds.length,
+    descendantCount: Math.max(categoryIds.length - 1, 0),
+    transactionCount,
+    ruleCount,
+    descendantNames,
+  };
+}
+
+function collectCategoryTreeIds(
+  rootCategoryId: string,
+  categories: CategoryDTO[]
+): string[] {
+  const childrenByParent = categories.reduce<Map<string, string[]>>((map, category) => {
+    if (!category.parentId) {
+      return map;
+    }
+
+    const childIds = map.get(category.parentId) ?? [];
+    childIds.push(category.id);
+    map.set(category.parentId, childIds);
+    return map;
+  }, new Map());
+
+  const categoryIds: string[] = [];
+
+  function visit(categoryId: string) {
+    categoryIds.push(categoryId);
+
+    for (const childId of childrenByParent.get(categoryId) ?? []) {
+      visit(childId);
+    }
+  }
+
+  visit(rootCategoryId);
+
+  return categoryIds;
 }
 
 function getErrorMessage(error: unknown) {

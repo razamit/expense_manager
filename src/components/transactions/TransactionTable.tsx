@@ -69,8 +69,9 @@ function TransactionRow({
           {txn.categoryName ? (
             <Badge
               variant="secondary"
-              className="cursor-pointer"
+              className="max-w-[18rem] cursor-pointer whitespace-normal text-left leading-snug"
               onClick={() => onCategorize(txn)}
+              title={txn.categoryName}
               style={{
                 backgroundColor: txn.categoryColor
                   ? `${txn.categoryColor}20`

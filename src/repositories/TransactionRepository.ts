@@ -57,7 +57,14 @@ export class TransactionRepository {
       prisma.transaction.findMany({
         where,
         include: {
-          category: { select: { id: true, name: true, color: true } },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+              parent: { select: { name: true } },
+            },
+          },
           account: { select: { displayName: true } },
         },
         orderBy: { date: "desc" },
@@ -173,7 +180,14 @@ export class TransactionRepository {
   static async findRecent(limit: number = 10) {
     return prisma.transaction.findMany({
       include: {
-        category: { select: { id: true, name: true, color: true } },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            parent: { select: { name: true } },
+          },
+        },
         account: { select: { displayName: true } },
       },
       orderBy: { date: "desc" },

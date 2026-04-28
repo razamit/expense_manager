@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { getCategoryDisplayName } from "@/lib/category-hierarchy";
 import type { TransactionDTO, TransactionFilters, CategoryDTO } from "@/types";
 
 interface TransactionsState {
@@ -108,7 +109,9 @@ export function useTransactionsViewModel() {
           ? {
               ...txn,
               categoryId,
-              categoryName: matchedCategory?.name,
+              categoryName: matchedCategory
+                ? getCategoryDisplayName(matchedCategory)
+                : undefined,
               categoryColor: matchedCategory?.color ?? undefined,
               isCategorizedByRule: !!createRule,
             }

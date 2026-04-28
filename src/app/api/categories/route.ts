@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { CategoryManager } from "@/managers/CategoryManager";
 import {
   CategoryHierarchyError,
   CategoryHierarchyManager,
@@ -65,6 +66,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await CategoryHierarchyManager.deleteCategory(id);
+    CategoryManager.invalidateCache();
     return NextResponse.json({ success: true });
   } catch (error) {
     return handleCategoryError(error);

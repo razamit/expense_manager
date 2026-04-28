@@ -20,11 +20,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  getCategoryDisplayName,
-  getLeafCategories,
   sortCategoriesByDisplayName,
 } from "@/lib/category-hierarchy";
 import { Switch } from "@/components/ui/switch";
+import { CategoryTreePicker } from "@/components/transactions/CategoryTreePicker";
 import type { TransactionDTO, CategoryDTO } from "@/types";
 
 interface CategoryAssignDialogProps {
@@ -63,16 +62,9 @@ export function CategoryAssignDialog({
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryParentId, setNewCategoryParentId] = useState("none");
 
-  const assignableCategories = sortCategoriesByDisplayName(getLeafCategories(categories));
   const rootCategories = sortCategoriesByDisplayName(
     categories.filter((category) => category.parentId === null)
   );
-
-  const filteredCategories = searchQuery
-    ? assignableCategories.filter((cat) =>
-        getCategoryDisplayName(cat).toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : assignableCategories;
 
   function resetDialogState() {
     setCreateRule(false);
@@ -90,7 +82,7 @@ export function CategoryAssignDialog({
     }
   }, [open]);
 
-  async function handleSelect(categoryId: string) {
+  async function handleSelect(category: CategoryDTO) {
     if (!transaction) return;
 
     setError("");
@@ -99,9 +91,10 @@ export function CategoryAssignDialog({
     try {
       await onAssign(
         transaction.id,
-        categoryId,
+        category.id,
         createRule,
-        createRule ? rulePattern || transaction.description : undefined
+        createRule ? rulePattern || transaction.description : undefined,
+        category
       );
 
       resetDialogState();
@@ -170,13 +163,13 @@ export function CategoryAssignDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[96vw] max-w-7xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Assign Category</DialogTitle>
         </DialogHeader>
 
         {transaction && (
-          <div className="text-sm text-muted-foreground mb-4">
+          <div className="mb-4 rounded-lg border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
             <p className="font-medium text-foreground" dir="auto">
               {transaction.description}
             </p>
@@ -184,126 +177,119 @@ export function CategoryAssignDialog({
           </div>
         )}
 
-        <Input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search categories..."
-          autoFocus
-        />
-
-        <div className="space-y-1 max-h-80 overflow-y-auto">
-          {filteredCategories.length === 0 && (
-            <p className="px-2 py-3 text-sm text-muted-foreground">
-              No subcategories match your search.
-            </p>
-          )}
-          {filteredCategories.map((cat) => (
-            <button
-              key={cat.id}
-              disabled={isSubmitting}
-              onClick={() => handleSelect(cat.id)}
-              className="flex w-full items-center gap-3 rounded-lg p-2 text-left text-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <div
-                className="h-3 w-3 rounded-full shrink-0"
-                style={{ backgroundColor: cat.color ?? "#737373" }}
-              />
-              {getCategoryDisplayName(cat)}
-            </button>
-          ))}
-        </div>
-
-        <div className="rounded-lg border border-dashed px-4 py-3 space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium">Create category here</p>
-              <p className="text-xs text-muted-foreground">
-                Add a category without leaving this transaction.
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={isSubmitting}
-              onClick={() => setShowCreateForm((current) => !current)}
-            >
-              <Plus className="h-3 w-3" />
-              {showCreateForm ? "Hide" : "New Category"}
-            </Button>
-          </div>
-
-          {showCreateForm && (
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="new-category-name">Category name</Label>
-                <Input
-                  id="new-category-name"
-                  value={newCategoryName}
-                  onChange={(event) => setNewCategoryName(event.target.value)}
-                  placeholder="e.g. Gas"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label>Parent category</Label>
-                <Select
-                  value={newCategoryParentId}
-                  onValueChange={setNewCategoryParentId}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Main category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No parent</SelectItem>
-                    {rootCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Pick a main category to create a subcategory.
-                </p>
-              </div>
-
-              <Button
-                type="button"
-                onClick={handleCreateCategory}
-                disabled={!newCategoryName.trim() || isSubmitting}
-                className="w-full"
-              >
-                {isSubmitting ? "Creating..." : "Create and Assign"}
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <div className="border-t pt-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={createRule}
-              onCheckedChange={setCreateRule}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.95fr)]">
+          <div className="space-y-3">
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search categories or paths..."
+              autoFocus
             />
-            <Label>Create auto-categorization rule</Label>
-          </div>
-          {createRule && (
-            <div className="space-y-2">
-              <Label>Match pattern</Label>
-              <Input
-                value={rulePattern}
-                onChange={(e) => setRulePattern(e.target.value)}
-                placeholder={transaction?.description ?? "Pattern..."}
+
+            <div className="rounded-xl border bg-muted/10 p-3">
+              <CategoryTreePicker
+                categories={categories}
+                searchQuery={searchQuery}
+                disabled={isSubmitting}
+                onSelect={handleSelect}
               />
-              <p className="text-xs text-muted-foreground">
-                Existing and future transactions matching this pattern will be auto-categorized.
-              </p>
             </div>
-          )}
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border border-dashed px-4 py-3 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Create category here</p>
+                  <p className="text-xs text-muted-foreground">
+                    Add a category without leaving this transaction.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isSubmitting}
+                  onClick={() => setShowCreateForm((current) => !current)}
+                >
+                  <Plus className="h-3 w-3" />
+                  {showCreateForm ? "Hide" : "New Category"}
+                </Button>
+              </div>
+
+              {showCreateForm && (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="new-category-name">Category name</Label>
+                    <Input
+                      id="new-category-name"
+                      value={newCategoryName}
+                      onChange={(event) => setNewCategoryName(event.target.value)}
+                      placeholder="e.g. Gas"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Parent category</Label>
+                    <Select
+                      value={newCategoryParentId}
+                      onValueChange={setNewCategoryParentId}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Main category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No parent</SelectItem>
+                        {rootCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Pick a main category to create a subcategory.
+                    </p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={handleCreateCategory}
+                    disabled={!newCategoryName.trim() || isSubmitting}
+                    className="w-full"
+                  >
+                    {isSubmitting ? "Creating..." : "Create and Assign"}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-lg border px-4 py-3 space-y-3">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={createRule}
+                  onCheckedChange={setCreateRule}
+                />
+                <Label>Create auto-categorization rule</Label>
+              </div>
+              {createRule && (
+                <div className="space-y-2">
+                  <Label>Match pattern</Label>
+                  <Input
+                    value={rulePattern}
+                    onChange={(e) => setRulePattern(e.target.value)}
+                    placeholder={transaction?.description ?? "Pattern..."}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Existing and future transactions matching this pattern will be auto-categorized.
+                  </p>
+                </div>
+              )}
+              {error && <p className="text-sm text-destructive">{error}</p>}
+            </div>
+          </div>
         </div>
 
         <DialogFooter>

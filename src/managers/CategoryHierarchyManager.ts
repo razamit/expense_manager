@@ -69,14 +69,8 @@ export class CategoryHierarchyManager {
   }
 
   static async deleteCategory(id: string): Promise<void> {
-    const category = await this.requireCategory(id);
-    if (category._count.children > 0) {
-      throw new CategoryHierarchyError(
-        "Remove subcategories before deleting this category."
-      );
-    }
-
-    await CategoryRepository.remove(id);
+    await this.requireCategory(id);
+    await CategoryRepository.removeTree(id);
   }
 
   static async assertLeafCategory(categoryId: string): Promise<void> {

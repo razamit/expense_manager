@@ -1,7 +1,32 @@
 import { TransactionRepository } from "@/repositories/TransactionRepository";
+import { getCategoryDisplayName } from "@/lib/category-hierarchy";
 import type { TransactionDTO, TransactionFilters } from "@/types";
 import { prisma } from "@/lib/prisma";
 import { CategoryHierarchyManager } from "@/managers/CategoryHierarchyManager";
+
+function mapCategoryName(
+  category:
+    | {
+        name: string;
+        parent?: { name: string } | null;
+      }
+    | null
+    | undefined
+): string | undefined {
+  if (!category) {
+    return undefined;
+  }
+
+  return getCategoryDisplayName({
+    id: "",
+    name: category.name,
+    icon: null,
+    color: null,
+    parentId: null,
+    parentName: category.parent?.name ?? null,
+    isSystem: false,
+  });
+}
 
 export class TransactionManager {
   static async getTransactions(filters: TransactionFilters) {
@@ -33,7 +58,7 @@ export class TransactionManager {
       status: txn.status,
       direction: txn.direction,
       categoryId: txn.categoryId,
-      categoryName: txn.category?.name,
+      categoryName: mapCategoryName(txn.category),
       categoryColor: txn.category?.color ?? undefined,
       isCategorizedByRule: txn.isCategorizedByRule,
       isExcluded: txn.isExcluded,
@@ -86,7 +111,7 @@ export class TransactionManager {
       status: txn.status,
       direction: txn.direction,
       categoryId: txn.categoryId,
-      categoryName: txn.category?.name,
+      categoryName: mapCategoryName(txn.category),
       categoryColor: txn.category?.color ?? undefined,
       isCategorizedByRule: txn.isCategorizedByRule,
       isExcluded: txn.isExcluded,
@@ -120,7 +145,7 @@ export class TransactionManager {
       txn.chargedAmount.toString(),
       txn.originalCurrency,
       txn.direction,
-      txn.category?.name ?? "",
+      mapCategoryName(txn.category) ?? "",
       txn.account.displayName,
       txn.status,
       txn.transactionType,
