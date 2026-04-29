@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AlertTriangle, Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -248,12 +248,14 @@ export default function CategoriesPage() {
           <Card>
             <CardHeader>
               <CardTitle>Auto-Categorization Rules</CardTitle>
+              <CardDescription>
+                Filter existing rules here. Create new rules from the transaction categorization dialog.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <CategoryRuleEditor
                 rules={vm.rules}
                 categories={vm.categories}
-                onAdd={vm.addRule}
                 onDelete={vm.removeRule}
                 onDeleteAll={vm.removeAllRules}
               />

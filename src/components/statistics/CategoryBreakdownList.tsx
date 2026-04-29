@@ -22,33 +22,64 @@ export function CategoryBreakdownList({
   year,
   month,
 }: CategoryBreakdownListProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedMainId, setExpandedMainId] = useState<string | null>(null);
+  const [expandedTransactionId, setExpandedTransactionId] = useState<string | null>(
+    null
+  );
   const [rowState, setRowState] = useState<ExpandedRowState>({
     transactions: [],
     isLoading: false,
   });
 
-  async function toggleExpand(categoryId: string) {
-    if (expandedId === categoryId) {
-      setExpandedId(null);
-      return;
-    }
+  function resetTransactions() {
+    setExpandedTransactionId(null);
+    setRowState({ transactions: [], isLoading: false });
+  }
 
-    setExpandedId(categoryId);
+  async function expandTransactions(categoryId: string) {
+    setExpandedTransactionId(categoryId);
     setRowState({ transactions: [], isLoading: true });
 
     const startDate = new Date(year, month, 1).toISOString();
     const endDate = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
 
-    const response = await fetch(
-      `/api/transactions?categoryId=${categoryId}&startDate=${startDate}&endDate=${endDate}&pageSize=200`
-    );
-    const data = await response.json();
+    try {
+      const response = await fetch(
+        `/api/transactions?categoryId=${categoryId}&startDate=${startDate}&endDate=${endDate}&pageSize=200`
+      );
+      const data = response.ok ? await response.json() : { transactions: [] };
 
-    setRowState({
-      transactions: data.transactions,
-      isLoading: false,
-    });
+      setRowState({
+        transactions: Array.isArray(data.transactions) ? data.transactions : [],
+        isLoading: false,
+      });
+    } catch {
+      setRowState({ transactions: [], isLoading: false });
+    }
+  }
+
+  async function toggleMainExpand(category: SpendingByCategory) {
+    if (expandedMainId === category.categoryId) {
+      setExpandedMainId(null);
+      resetTransactions();
+      return;
+    }
+
+    setExpandedMainId(category.categoryId);
+    resetTransactions();
+
+    if (category.childCategories.length === 0) {
+      await expandTransactions(category.categoryId);
+    }
+  }
+
+  async function toggleTransactionExpand(categoryId: string) {
+    if (expandedTransactionId === categoryId) {
+      resetTransactions();
+      return;
+    }
+
+    await expandTransactions(categoryId);
   }
 
   if (categories.length === 0) {
@@ -60,34 +91,50 @@ export function CategoryBreakdownList({
   return (
     <div className="space-y-1">
       {categories.map((cat) => (
-        <CategoryRow
+        <MainCategoryRow
           key={cat.categoryId}
           category={cat}
-          isExpanded={expandedId === cat.categoryId}
-          rowState={expandedId === cat.categoryId ? rowState : null}
-          onToggle={() => toggleExpand(cat.categoryId)}
+          isExpanded={expandedMainId === cat.categoryId}
+          isTransactionExpanded={expandedTransactionId === cat.categoryId}
+          rowState={expandedTransactionId === cat.categoryId ? rowState : null}
+          expandedTransactionId={expandedTransactionId}
+          transactionRowState={rowState}
+          onToggle={() => toggleMainExpand(cat)}
+          onSubcategoryToggle={toggleTransactionExpand}
         />
       ))}
     </div>
   );
 }
 
-function CategoryRow({
+function MainCategoryRow({
   category,
   isExpanded,
+  isTransactionExpanded,
   rowState,
+  expandedTransactionId,
+  transactionRowState,
   onToggle,
+  onSubcategoryToggle,
 }: {
   category: SpendingByCategory;
   isExpanded: boolean;
+  isTransactionExpanded: boolean;
   rowState: ExpandedRowState | null;
+  expandedTransactionId: string | null;
+  transactionRowState: ExpandedRowState;
   onToggle: () => void;
+  onSubcategoryToggle: (categoryId: string) => void | Promise<void>;
 }) {
+  const hasChildren = category.childCategories.length > 0;
+
   return (
     <div>
       <button
+        type="button"
         onClick={onToggle}
         className="flex items-center justify-between w-full text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors"
+        aria-expanded={isExpanded}
       >
         <div className="flex items-center gap-2">
           {isExpanded ? (
@@ -110,6 +157,71 @@ function CategoryRow({
             {category.percentOfTotal.toFixed(1)}%
           </span>
         </div>
+      </button>
+
+      {isExpanded && hasChildren && (
+        <div className="ml-9 mb-2 border-l-2 border-muted pl-3 space-y-1">
+          {category.childCategories.map((childCategory) => (
+            <SubcategoryRow
+              key={childCategory.categoryId}
+              category={childCategory}
+              isExpanded={expandedTransactionId === childCategory.categoryId}
+              rowState={
+                expandedTransactionId === childCategory.categoryId
+                  ? transactionRowState
+                  : null
+              }
+              onToggle={() => onSubcategoryToggle(childCategory.categoryId)}
+            />
+          ))}
+        </div>
+      )}
+
+      {isExpanded && !hasChildren && isTransactionExpanded && rowState && (
+        <TransactionList
+          transactions={rowState.transactions}
+          isLoading={rowState.isLoading}
+        />
+      )}
+    </div>
+  );
+}
+
+function SubcategoryRow({
+  category,
+  isExpanded,
+  rowState,
+  onToggle,
+}: {
+  category: SpendingByCategory;
+  isExpanded: boolean;
+  rowState: ExpandedRowState | null;
+  onToggle: () => void;
+}) {
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex items-center justify-between w-full text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors"
+        aria-expanded={isExpanded}
+      >
+        <div className="flex items-center gap-2">
+          {isExpanded ? (
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+          <div
+            className="h-3 w-3 rounded-full shrink-0"
+            style={{ backgroundColor: category.categoryColor }}
+          />
+          <span>{category.categoryName}</span>
+          <span className="text-muted-foreground">
+            ({category.transactionCount})
+          </span>
+        </div>
+        <span className="font-mono">{formatAmount(category.totalAmount)}</span>
       </button>
 
       {isExpanded && rowState && (

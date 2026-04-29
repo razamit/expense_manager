@@ -144,6 +144,7 @@ export interface SpendingByCategory {
   totalAmount: number;
   transactionCount: number;
   percentOfTotal: number;
+  childCategories: SpendingByCategory[];
 }
 
 export interface IncomeExpenseTrend {

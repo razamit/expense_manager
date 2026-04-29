@@ -1,35 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  getCategoryDisplayName,
-  getLeafCategories,
-  sortCategoriesByDisplayName,
-} from "@/lib/category-hierarchy";
-import { Switch } from "@/components/ui/switch";
+import { getCategoryDisplayName } from "@/lib/category-hierarchy";
 import type { CategoryDTO, CategoryRuleDTO } from "@/types";
 
 interface CategoryRuleEditorProps {
   rules: CategoryRuleDTO[];
   categories: CategoryDTO[];
-  onAdd: (data: {
-    categoryId: string;
-    matchPattern: string;
-    matchField?: string;
-    isRegex?: boolean;
-    priority?: number;
-  }) => Promise<void>;
   onDelete: (id: string) => Promise<void> | void;
   onDeleteAll: () => Promise<void> | void;
 }
@@ -37,40 +18,32 @@ interface CategoryRuleEditorProps {
 export function CategoryRuleEditor({
   rules,
   categories,
-  onAdd,
   onDelete,
   onDeleteAll,
 }: CategoryRuleEditorProps) {
-  const [newPattern, setNewPattern] = useState("");
-  const [newCategoryId, setNewCategoryId] = useState("");
-  const [isRegex, setIsRegex] = useState(false);
+  const [filterText, setFilterText] = useState("");
   const [error, setError] = useState("");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
 
-  const leafCategories = sortCategoriesByDisplayName(getLeafCategories(categories));
   const categoryLabelById = new Map(
     categories.map((category) => [category.id, getCategoryDisplayName(category)])
   );
-
-  async function handleAdd() {
-    if (!newPattern || !newCategoryId) return;
-
-    setError("");
-
-    try {
-      await onAdd({
-        categoryId: newCategoryId,
-        matchPattern: newPattern,
-        isRegex,
-      });
-      setNewPattern("");
-      setNewCategoryId("");
-      setIsRegex(false);
-    } catch (requestError) {
-      setError(getErrorMessage(requestError));
+  const normalizedFilter = filterText.trim().toLocaleLowerCase();
+  const filteredRules = rules.filter((rule) => {
+    if (!normalizedFilter) {
+      return true;
     }
-  }
+
+    const categoryLabel =
+      categoryLabelById.get(rule.categoryId) ?? rule.categoryName ?? rule.categoryId;
+
+    return (
+      rule.matchPattern.toLocaleLowerCase().includes(normalizedFilter)
+      || categoryLabel.toLocaleLowerCase().includes(normalizedFilter)
+      || (rule.isRegex && "regex".includes(normalizedFilter))
+    );
+  });
 
   async function handleDelete(ruleId: string) {
     setError("");
@@ -109,41 +82,28 @@ export function CategoryRuleEditor({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 items-end">
-        <div className="space-y-1 flex-1 min-w-[200px]">
-          <Label className="text-xs">Pattern</Label>
+        <div className="space-y-1 flex-1 min-w-[240px]">
+          <Label htmlFor="category-rule-filter" className="text-xs">Filter rules</Label>
           <Input
-            value={newPattern}
-            onChange={(e) => setNewPattern(e.target.value)}
-            placeholder="e.g. שופרסל or regex"
+            id="category-rule-filter"
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            placeholder="Search by pattern or category"
           />
         </div>
-        <div className="space-y-1 w-[180px]">
-          <Label className="text-xs">Category</Label>
-          <Select value={newCategoryId} onValueChange={setNewCategoryId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {leafCategories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {getCategoryDisplayName(cat)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex min-h-9 items-center text-xs text-muted-foreground">
+          {filteredRules.length} of {rules.length} rule{rules.length === 1 ? "" : "s"}
         </div>
-        <div className="flex items-center gap-2">
-          <Switch checked={isRegex} onCheckedChange={setIsRegex} />
-          <Label className="text-xs">Regex</Label>
-        </div>
-        <Button
-          size="sm"
-          onClick={handleAdd}
-          disabled={!newPattern || !newCategoryId || isDeletingAll}
-        >
-          <Plus className="h-3 w-3" />
-          Add
-        </Button>
+        {filterText && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setFilterText("")}
+            disabled={isDeletingAll || pendingDeleteId !== null}
+          >
+            Clear
+          </Button>
+        )}
         <Button
           size="sm"
           variant="destructive"
@@ -159,32 +119,40 @@ export function CategoryRuleEditor({
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="space-y-2">
-        {rules.map((rule) => (
-          <div
-            key={rule.id}
-            className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
-          >
-            <div className="flex items-center gap-3">
-              <code className="text-xs bg-muted px-1.5 py-0.5 rounded" dir="auto">
-                {rule.matchPattern}
-              </code>
-              <span className="text-muted-foreground">→</span>
-              <span>{categoryLabelById.get(rule.categoryId) ?? rule.categoryName ?? rule.categoryId}</span>
-              {rule.isRegex && (
-                <span className="text-xs text-muted-foreground">(regex)</span>
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-destructive h-7 w-7"
-              disabled={isDeletingAll || pendingDeleteId !== null}
-              onClick={() => handleDelete(rule.id)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+        {filteredRules.length === 0 ? (
+          <div className="rounded-lg border border-dashed px-3 py-6 text-sm text-muted-foreground">
+            {rules.length === 0
+              ? "No auto-categorization rules yet. Create them from the transaction categorization dialog."
+              : "No rules match this filter."}
           </div>
-        ))}
+        ) : (
+          filteredRules.map((rule) => (
+            <div
+              key={rule.id}
+              className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
+            >
+              <div className="flex items-center gap-3">
+                <code className="text-xs bg-muted px-1.5 py-0.5 rounded" dir="auto">
+                  {rule.matchPattern}
+                </code>
+                <span className="text-muted-foreground">→</span>
+                <span>{categoryLabelById.get(rule.categoryId) ?? rule.categoryName ?? rule.categoryId}</span>
+                {rule.isRegex && (
+                  <span className="text-xs text-muted-foreground">(regex)</span>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive h-7 w-7"
+                disabled={isDeletingAll || pendingDeleteId !== null}
+                onClick={() => handleDelete(rule.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

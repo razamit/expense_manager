@@ -149,21 +149,34 @@ function buildCategoryRollups(
   const summaries = categories
     .filter((category) => category.parentId === null)
     .map((category) => {
-      const descendants = childrenByParent.get(category.id) ?? [];
-      const transactions = [category, ...descendants].flatMap(
-        (entry) => entry.transactions
-      );
-      const totalAmount = transactions.reduce(
-        (sum, transaction) => sum + amountForTransaction(transaction),
+      const directSummary = createCategorySummary(category, amountForTransaction);
+      const childSummaries = (childrenByParent.get(category.id) ?? [])
+        .map((childCategory) =>
+          createCategorySummary(childCategory, amountForTransaction)
+        )
+        .filter((summary) => summary.totalAmount > 0)
+        .sort((left, right) => right.totalAmount - left.totalAmount);
+
+      const childAmountTotal = childSummaries.reduce(
+        (sum, summary) => sum + summary.totalAmount,
         0
       );
+      const childTransactionTotal = childSummaries.reduce(
+        (sum, summary) => sum + summary.transactionCount,
+        0
+      );
+      const totalAmount = directSummary.totalAmount + childAmountTotal;
+      const transactionCount =
+        directSummary.transactionCount + childTransactionTotal;
 
       return {
         categoryId: category.id,
         categoryName: category.name,
         categoryColor: category.color ?? "#737373",
         totalAmount,
-        transactionCount: transactions.length,
+        transactionCount,
+        percentOfTotal: 0,
+        childCategories: childSummaries,
       };
     })
     .filter((summary) => summary.totalAmount > 0)
@@ -177,5 +190,32 @@ function buildCategoryRollups(
   return summaries.map((summary) => ({
     ...summary,
     percentOfTotal: totalAmount > 0 ? (summary.totalAmount / totalAmount) * 100 : 0,
+    childCategories: summary.childCategories.map((childCategory) => ({
+      ...childCategory,
+      percentOfTotal:
+        summary.totalAmount > 0
+          ? (childCategory.totalAmount / summary.totalAmount) * 100
+          : 0,
+    })),
   }));
+}
+
+function createCategorySummary(
+  category: CategoryRollupSource,
+  amountForTransaction: (transaction: { chargedAmount: number }) => number
+): SpendingByCategory {
+  const totalAmount = category.transactions.reduce(
+    (sum, transaction) => sum + amountForTransaction(transaction),
+    0
+  );
+
+  return {
+    categoryId: category.id,
+    categoryName: category.name,
+    categoryColor: category.color ?? "#737373",
+    totalAmount,
+    transactionCount: category.transactions.length,
+    percentOfTotal: 0,
+    childCategories: [],
+  };
 }
