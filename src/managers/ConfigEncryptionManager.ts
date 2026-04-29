@@ -10,6 +10,11 @@ interface StoredCredentials {
   [accountId: string]: Record<string, string>;
 }
 
+interface CredentialOwnerReference {
+  id: string;
+  credentialSourceAccountId?: string | null;
+}
+
 let decryptedMasterPassword: string | null = null;
 let credentialsCache: StoredCredentials | null = null;
 
@@ -57,6 +62,18 @@ export class ConfigEncryptionManager {
   static getCredentials(accountId: string): Record<string, string> | null {
     if (!credentialsCache) return null;
     return credentialsCache[accountId] ?? null;
+  }
+
+  static getCredentialOwnerAccountId(
+    account: CredentialOwnerReference
+  ): string {
+    return account.credentialSourceAccountId ?? account.id;
+  }
+
+  static getCredentialsForAccount(
+    account: CredentialOwnerReference
+  ): Record<string, string> | null {
+    return this.getCredentials(this.getCredentialOwnerAccountId(account));
   }
 
   static async saveCredentials(

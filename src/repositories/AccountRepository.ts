@@ -23,6 +23,7 @@ export class AccountRepository {
     displayName: string;
     companyType: string;
     accountNumber?: string;
+    credentialSourceAccountId?: string | null;
   }): Promise<Account> {
     return prisma.account.create({ data });
   }
@@ -31,13 +32,46 @@ export class AccountRepository {
     id: string,
     data: Partial<{
       displayName: string;
-      accountNumber: string;
+      accountNumber: string | null;
+      credentialSourceAccountId: string | null;
       isActive: boolean;
       lastScrapedAt: Date;
       lastBalance: number;
     }>
   ): Promise<Account> {
     return prisma.account.update({ where: { id }, data });
+  }
+
+  static async findByIds(ids: string[]): Promise<Account[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    return prisma.account.findMany({
+      where: { id: { in: ids } },
+      orderBy: { displayName: "asc" },
+    });
+  }
+
+  static async findByCompanyTypeAndAccountNumber(
+    companyType: string,
+    accountNumber: string
+  ): Promise<Account | null> {
+    return prisma.account.findFirst({
+      where: {
+        companyType,
+        accountNumber,
+      },
+    });
+  }
+
+  static async findCredentialDependents(
+    credentialSourceAccountId: string
+  ): Promise<Account[]> {
+    return prisma.account.findMany({
+      where: { credentialSourceAccountId },
+      orderBy: { displayName: "asc" },
+    });
   }
 
   static async remove(id: string): Promise<void> {

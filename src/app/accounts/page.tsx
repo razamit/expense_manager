@@ -5,15 +5,17 @@ import { Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccountCard } from "@/components/accounts/AccountCard";
 import { AccountFormDialog } from "@/components/accounts/AccountFormDialog";
+import { AccountBindingDialog } from "@/components/accounts/AccountBindingDialog";
 import { useAccountsViewModel } from "@/viewmodels/useAccountsViewModel";
 import type { AccountDTO } from "@/types";
 
 export default function AccountsPage() {
   const vm = useAccountsViewModel();
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<AccountDTO | null>(null);
 
-  function handleEdit(_account: AccountDTO) {
-    // Future: open edit dialog
+  function handleEdit(account: AccountDTO) {
+    setEditingAccount(account);
   }
 
   function handleDelete(id: string) {
@@ -67,6 +69,14 @@ export default function AccountsPage() {
             <AccountCard
               key={account.id}
               account={account}
+              credentialSourceName={
+                account.credentialSourceAccountId
+                  ? vm.accounts.find(
+                      (candidateAccount) =>
+                        candidateAccount.id === account.credentialSourceAccountId
+                    )?.displayName
+                  : undefined
+              }
               onScrape={vm.scrapeAccount}
               onEdit={handleEdit}
               onDelete={handleDelete}
@@ -79,7 +89,22 @@ export default function AccountsPage() {
       <AccountFormDialog
         open={showAddDialog}
         onClose={() => setShowAddDialog(false)}
+        accounts={vm.accounts}
         onSubmit={vm.addAccount}
+      />
+
+      <AccountFormDialog
+        open={Boolean(editingAccount)}
+        onClose={() => setEditingAccount(null)}
+        onSubmit={vm.updateAccount}
+        accounts={vm.accounts}
+        account={editingAccount}
+      />
+
+      <AccountBindingDialog
+        bindingRequest={vm.pendingBinding}
+        onClose={vm.clearPendingBinding}
+        onConfirm={vm.bindAccountNumber}
       />
     </div>
   );

@@ -8,6 +8,35 @@ interface AccountsState {
   isLoading: boolean;
   scrapeProgress: ScrapeProgress[];
   isScraping: boolean;
+  pendingBinding: ScrapeProgress | null;
+}
+
+export interface SaveAccountInput {
+  id?: string;
+  displayName?: string;
+  companyType?: string;
+  accountNumber?: string | null;
+  credentialSourceAccountId?: string | null;
+  credentials?: Record<string, string>;
+  isActive?: boolean;
+}
+
+async function readJson<T>(response: Response): Promise<T> {
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message =
+      payload && typeof payload === "object" && "error" in payload
+        ? String(payload.error)
+        : "Request failed";
+    throw new Error(message);
+  }
+
+  return payload as T;
+}
+
+function getFirstBindingResult(results: ScrapeProgress[]) {
+  return results.find((result) => result.status === "binding-needed") ?? null;
 }
 
 export function useAccountsViewModel() {
@@ -16,50 +45,49 @@ export function useAccountsViewModel() {
     isLoading: true,
     scrapeProgress: [],
     isScraping: false,
+    pendingBinding: null,
   });
 
   const fetchAccounts = useCallback(async () => {
     setState((prev) => ({ ...prev, isLoading: true }));
-    const response = await fetch("/api/accounts");
-    const accounts = await response.json();
-    setState((prev) => ({ ...prev, accounts, isLoading: false }));
+    try {
+      const response = await fetch("/api/accounts");
+      const accounts = await readJson<AccountDTO[]>(response);
+      setState((prev) => ({ ...prev, accounts, isLoading: false }));
+    } catch (error) {
+      console.error("[Accounts] Failed to fetch accounts", error);
+      setState((prev) => ({ ...prev, isLoading: false }));
+    }
   }, []);
 
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
 
-  async function addAccount(data: {
-    displayName: string;
-    companyType: string;
-    accountNumber: string;
-    credentials: Record<string, string>;
-  }) {
-    await fetch("/api/accounts", {
-      method: "POST",
+  async function saveAccount(data: SaveAccountInput) {
+    const method = data.id ? "PUT" : "POST";
+    const response = await fetch("/api/accounts", {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    fetchAccounts();
+
+    await readJson<AccountDTO>(response);
+    await fetchAccounts();
   }
 
-  async function updateAccount(data: {
-    id: string;
-    displayName?: string;
-    isActive?: boolean;
-    credentials?: Record<string, string>;
-  }) {
-    await fetch("/api/accounts", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    fetchAccounts();
+  async function addAccount(data: SaveAccountInput) {
+    await saveAccount(data);
+  }
+
+  async function updateAccount(data: SaveAccountInput) {
+    await saveAccount(data);
   }
 
   async function removeAccount(id: string) {
-    await fetch(`/api/accounts?id=${id}`, { method: "DELETE" });
-    fetchAccounts();
+    const response = await fetch(`/api/accounts?id=${id}`, { method: "DELETE" });
+    await readJson<{ success: boolean }>(response);
+    await fetchAccounts();
   }
 
   async function scrapeAccount(accountId: string) {
@@ -76,12 +104,30 @@ export function useAccountsViewModel() {
         return;
       }
 
-      const result = await response.json();
+      const result = await readJson<ScrapeProgress>(response);
       setState((prev) => ({
         ...prev,
         scrapeProgress: [result],
+        pendingBinding:
+          result.status === "binding-needed" ? result : prev.pendingBinding,
       }));
-      fetchAccounts();
+      await fetchAccounts();
+    } catch (error) {
+      const account = state.accounts.find(
+        (candidateAccount) => candidateAccount.id === accountId
+      );
+      setState((prev) => ({
+        ...prev,
+        scrapeProgress: [
+          {
+            accountId,
+            accountName: account?.displayName ?? "Unknown account",
+            status: "error",
+            message:
+              error instanceof Error ? error.message : "Scrape failed",
+          },
+        ],
+      }));
     } finally {
       setState((prev) => ({ ...prev, isScraping: false }));
     }
@@ -101,24 +147,52 @@ export function useAccountsViewModel() {
         return;
       }
 
-      const data = await response.json();
+      const data = await readJson<{ results?: ScrapeProgress[] }>(response);
+      const results = data.results ?? [];
       setState((prev) => ({
         ...prev,
-        scrapeProgress: data.results ?? [],
+        scrapeProgress: results,
+        pendingBinding: getFirstBindingResult(results) ?? prev.pendingBinding,
       }));
-      fetchAccounts();
+      await fetchAccounts();
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        scrapeProgress: [
+          {
+            accountId: "all",
+            accountName: "All Accounts",
+            status: "error",
+            message:
+              error instanceof Error ? error.message : "Scrape failed",
+          },
+        ],
+      }));
     } finally {
       setState((prev) => ({ ...prev, isScraping: false }));
     }
   }
 
+  async function bindAccountNumber(accountId: string, accountNumber: string) {
+    setState((prev) => ({ ...prev, pendingBinding: null }));
+    await updateAccount({ id: accountId, accountNumber });
+    await scrapeAccount(accountId);
+  }
+
+  function clearPendingBinding() {
+    setState((prev) => ({ ...prev, pendingBinding: null }));
+  }
+
   return {
     ...state,
+    saveAccount,
     addAccount,
     updateAccount,
     removeAccount,
     scrapeAccount,
     scrapeAllAccounts,
+    bindAccountNumber,
+    clearPendingBinding,
     refresh: fetchAccounts,
   };
 }

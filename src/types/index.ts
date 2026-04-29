@@ -3,6 +3,7 @@ export interface AccountDTO {
   displayName: string;
   companyType: string;
   accountNumber: string | null;
+  credentialSourceAccountId: string | null;
   lastScrapedAt: string | null;
   lastBalance: number | null;
   isActive: boolean;
@@ -82,6 +83,12 @@ export interface BudgetDTO {
   percentUsed?: number;
 }
 
+export interface ScrapeBindingOption {
+  accountNumber: string;
+  balance?: number | null;
+  transactionCount: number;
+}
+
 export interface TransactionFilters {
   startDate?: string;
   endDate?: string;
@@ -126,10 +133,20 @@ export interface AnomalyAlert {
 export interface ScrapeProgress {
   accountId: string;
   accountName: string;
-  status: "pending" | "scraping" | "importing" | "done" | "error";
+  status:
+    | "pending"
+    | "scraping"
+    | "importing"
+    | "done"
+    | "error"
+    | "binding-needed";
   message?: string;
   txnCount?: number;
   newTxnCount?: number;
+  credentialOwnerAccountId?: string;
+  credentialOwnerName?: string;
+  matchedAccountNumber?: string | null;
+  availableBindings?: ScrapeBindingOption[];
 }
 
 export interface DashboardSummary {

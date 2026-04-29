@@ -12,14 +12,18 @@ model Account {
   displayName   String
   companyType   String
   accountNumber String?
+  credentialSourceAccountId String?
   lastScrapedAt DateTime?
   lastBalance   Float?
   isActive      Boolean       @default(true)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  credentialSourceAccount Account? @relation("SharedAccountCredentials", fields: [credentialSourceAccountId], references: [id], onDelete: SetNull)
+  sharedCredentialAccounts Account[] @relation("SharedAccountCredentials")
   transactions  Transaction[]
   scrapeRuns    ScrapeRun[]
 
+  @@index([credentialSourceAccountId])
   @@unique([companyType, accountNumber])
 }
 

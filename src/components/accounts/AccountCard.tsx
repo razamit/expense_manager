@@ -11,6 +11,7 @@ import type { AccountDTO } from "@/types";
 
 interface AccountCardProps {
   account: AccountDTO;
+  credentialSourceName?: string;
   onScrape: (id: string) => void;
   onEdit: (account: AccountDTO) => void;
   onDelete: (id: string) => void;
@@ -19,12 +20,15 @@ interface AccountCardProps {
 
 export function AccountCard({
   account,
+  credentialSourceName,
   onScrape,
   onEdit,
   onDelete,
   isScraping,
 }: AccountCardProps) {
   const metadata = getCompanyMetadata(account.companyType);
+  const isCreditCard = metadata?.type === "credit";
+  const bindingLabel = account.accountNumber ? "Bound" : "Needs binding";
 
   return (
     <Card>
@@ -33,15 +37,30 @@ export function AccountCard({
           <CreditCard className="h-5 w-5 text-primary" />
           <CardTitle className="text-base">{account.displayName}</CardTitle>
         </div>
-        <Badge variant={account.isActive ? "default" : "secondary"}>
-          {account.isActive ? "Active" : "Inactive"}
-        </Badge>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {isCreditCard && (
+            <Badge variant={account.accountNumber ? "outline" : "destructive"}>
+              {bindingLabel}
+            </Badge>
+          )}
+          <Badge variant={account.isActive ? "default" : "secondary"}>
+            {account.isActive ? "Active" : "Inactive"}
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-2 text-sm text-muted-foreground">
           <p>{metadata?.name ?? account.companyType}</p>
+          {credentialSourceName && (
+            <p>Shared login: {credentialSourceName}</p>
+          )}
           {account.accountNumber && (
-            <p>Account: {account.accountNumber}</p>
+            <p>{isCreditCard ? "Bound card" : "Account"}: {account.accountNumber}</p>
+          )}
+          {isCreditCard && !account.accountNumber && (
+            <p className="text-destructive">
+              Transactions cannot be imported until this card is bound to one returned card/account number.
+            </p>
           )}
           {account.lastBalance != null && (
             <p className="text-foreground font-medium">
