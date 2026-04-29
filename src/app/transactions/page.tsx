@@ -7,8 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFiltersBar } from "@/components/transactions/TransactionFiltersBar";
 import { CategoryAssignDialog } from "@/components/transactions/CategoryAssignDialog";
+import { getBankCategorySuggestion } from "@/lib/bank-category-suggestions";
+import { getLeafCategories } from "@/lib/category-hierarchy";
 import { useTransactionsViewModel } from "@/viewmodels/useTransactionsViewModel";
-import type { TransactionDTO } from "@/types";
+import type { BankCategorySuggestionDTO, TransactionDTO } from "@/types";
 
 export default function TransactionsPage() {
   const vm = useTransactionsViewModel();
@@ -18,6 +20,12 @@ export default function TransactionsPage() {
   const totalPages = Math.ceil(vm.total / vm.pageSize);
   const selectedSource = vm.filters.accountId ?? "all";
   const showSourceTabs = vm.accounts.length > 1;
+  const leafCategories = getLeafCategories(vm.categories);
+  const suggestionsByTransactionId = buildSuggestionLookup(
+    vm.transactions,
+    leafCategories,
+    vm.bankCategoryMappings
+  );
 
   function renderSourceLabel(label: string, count: number) {
     return `${label} (${count})`;
@@ -28,6 +36,32 @@ export default function TransactionsPage() {
     await vm.refreshBankCategoryMappings();
   }
 
+  async function handleApplySuggestion(
+    transaction: TransactionDTO,
+    createRule: boolean
+  ) {
+    const suggestion = suggestionsByTransactionId[transaction.id];
+    if (!suggestion) {
+      throw new Error("Suggestion is no longer available");
+    }
+
+    const category = leafCategories.find(
+      (candidate) => candidate.id === suggestion.categoryId
+    );
+
+    if (!category) {
+      throw new Error("Suggested category could not be found");
+    }
+
+    await vm.assignCategory(
+      transaction.id,
+      category.id,
+      createRule,
+      createRule ? transaction.description : undefined,
+      category
+    );
+  }
+
   const transactionsCard = (
     <Card>
       <CardContent className="p-4">
@@ -36,7 +70,9 @@ export default function TransactionsPage() {
         ) : (
           <TransactionTable
             transactions={vm.transactions}
+            suggestionsByTransactionId={suggestionsByTransactionId}
             onCategorize={handleCategorize}
+            onApplySuggestion={handleApplySuggestion}
             onToggleExcluded={vm.toggleExcluded}
           />
         )}
@@ -131,5 +167,23 @@ export default function TransactionsPage() {
         onCreateCategory={vm.createCategory}
       />
     </div>
+  );
+}
+
+function buildSuggestionLookup(
+  transactions: TransactionDTO[],
+  leafCategories: ReturnType<typeof getLeafCategories>,
+  bankCategoryMappings: ReturnType<typeof useTransactionsViewModel>["bankCategoryMappings"]
+): Record<string, BankCategorySuggestionDTO | null> {
+  return transactions.reduce<Record<string, BankCategorySuggestionDTO | null>>(
+    (lookup, transaction) => {
+      lookup[transaction.id] = getBankCategorySuggestion({
+        bankCategory: transaction.bankCategory,
+        selectableCategories: leafCategories,
+        mappings: bankCategoryMappings,
+      });
+      return lookup;
+    },
+    {}
   );
 }

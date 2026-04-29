@@ -84,9 +84,12 @@ export interface BankCategoryMappingCatalogDTO {
 
 export type BankCategorySuggestionReason =
   | "explicit-mapping"
-  | "fuzzy-category-name";
+  | "fuzzy-category-name"
+  | "semantic-category-similarity";
 
 export interface BankCategorySuggestionDTO {
+  categoryId: string;
+  categoryDisplayName: string;
   filterText: string;
   reason: BankCategorySuggestionReason;
 }

@@ -221,11 +221,7 @@ export function CategoryAssignDialog({
                   Bank category: {transaction.bankCategory}
                 </span>
                 <span className="rounded-full border border-dashed px-2.5 py-1">
-                  {bankCategorySuggestion
-                    ? bankCategorySuggestion.reason === "explicit-mapping"
-                      ? `Suggested from mapping: ${bankCategorySuggestion.filterText}`
-                      : `Suggested from closest category name: ${bankCategorySuggestion.filterText}`
-                    : "No confident category suggestion"}
+                  {getSuggestionLabel(bankCategorySuggestion)}
                 </span>
               </div>
             )}
@@ -371,4 +367,27 @@ function getErrorMessage(error: unknown) {
   }
 
   return "Request failed";
+}
+
+function getSuggestionLabel(
+  suggestion:
+    | {
+        reason: "explicit-mapping" | "fuzzy-category-name" | "semantic-category-similarity";
+        filterText: string;
+      }
+    | null
+) {
+  if (!suggestion) {
+    return "No confident category suggestion";
+  }
+
+  if (suggestion.reason === "explicit-mapping") {
+    return `Suggested from mapping: ${suggestion.filterText}`;
+  }
+
+  if (suggestion.reason === "semantic-category-similarity") {
+    return `Suggested from semantic similarity: ${suggestion.filterText}`;
+  }
+
+  return `Suggested from closest category name: ${suggestion.filterText}`;
 }

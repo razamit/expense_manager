@@ -6,11 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AmountDisplay } from "@/components/shared/AmountDisplay";
 import { formatDate } from "@/lib/date-utils";
-import type { TransactionDTO } from "@/types";
+import type { BankCategorySuggestionDTO, TransactionDTO } from "@/types";
 
 interface TransactionTableProps {
   transactions: TransactionDTO[];
+  suggestionsByTransactionId: Record<string, BankCategorySuggestionDTO | null>;
   onCategorize: (transaction: TransactionDTO) => void;
+  onApplySuggestion: (
+    transaction: TransactionDTO,
+    createRule: boolean
+  ) => Promise<void>;
   onToggleExcluded: (transactionId: string) => void;
 }
 
@@ -20,11 +25,15 @@ function hasExtraDetails(txn: TransactionDTO): boolean {
 
 function TransactionRow({
   txn,
+  suggestion,
   onCategorize,
+  onApplySuggestion,
   onToggleExcluded,
 }: {
   txn: TransactionDTO;
+  suggestion: BankCategorySuggestionDTO | null;
   onCategorize: (txn: TransactionDTO) => void;
+  onApplySuggestion: (txn: TransactionDTO, createRule: boolean) => Promise<void>;
   onToggleExcluded: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -82,14 +91,12 @@ function TransactionRow({
               {txn.categoryName}
             </Badge>
           ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-6 text-xs"
-              onClick={() => onCategorize(txn)}
-            >
-              Categorize
-            </Button>
+            <InlineSuggestionActions
+              txn={txn}
+              suggestion={suggestion}
+              onCategorize={onCategorize}
+              onApplySuggestion={onApplySuggestion}
+            />
           )}
         </td>
         <td className="py-3 text-right">
@@ -120,6 +127,82 @@ function TransactionRow({
         </tr>
       )}
     </>
+  );
+}
+
+function InlineSuggestionActions({
+  txn,
+  suggestion,
+  onCategorize,
+  onApplySuggestion,
+}: {
+  txn: TransactionDTO;
+  suggestion: BankCategorySuggestionDTO | null;
+  onCategorize: (txn: TransactionDTO) => void;
+  onApplySuggestion: (txn: TransactionDTO, createRule: boolean) => Promise<void>;
+}) {
+  const [pendingAction, setPendingAction] = useState<null | "approve" | "approve-rule">(null);
+  const [error, setError] = useState("");
+
+  async function handleApprove(createRule: boolean) {
+    setError("");
+    setPendingAction(createRule ? "approve-rule" : "approve");
+
+    try {
+      await onApplySuggestion(txn, createRule);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+      setPendingAction(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8"
+        onClick={() => onCategorize(txn)}
+        disabled={pendingAction !== null}
+      >
+        Categorize
+      </Button>
+
+      {suggestion && (
+        <>
+          <span className="text-xs text-muted-foreground">
+            Suggested:{" "}
+            <span className="font-medium text-foreground" dir="auto">
+              {suggestion.categoryDisplayName}
+            </span>
+          </span>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-8"
+            disabled={pendingAction !== null}
+            onClick={() => handleApprove(false)}
+          >
+            {pendingAction === "approve" ? "Approving..." : "Approve"}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8"
+            disabled={pendingAction !== null}
+            onClick={() => handleApprove(true)}
+          >
+            {pendingAction === "approve-rule"
+              ? "Saving..."
+              : "Approve + Rule"}
+          </Button>
+        </>
+      )}
+
+      {error && <p className="basis-full text-xs text-destructive">{error}</p>}
+    </div>
   );
 }
 
@@ -192,7 +275,9 @@ function renderRawData(data: Record<string, unknown>): React.ReactNode {
 
 export function TransactionTable({
   transactions,
+  suggestionsByTransactionId,
   onCategorize,
+  onApplySuggestion,
   onToggleExcluded,
 }: TransactionTableProps) {
   if (transactions.length === 0) {
@@ -221,7 +306,9 @@ export function TransactionTable({
             <TransactionRow
               key={txn.id}
               txn={txn}
+              suggestion={suggestionsByTransactionId[txn.id] ?? null}
               onCategorize={onCategorize}
+              onApplySuggestion={onApplySuggestion}
               onToggleExcluded={onToggleExcluded}
             />
           ))}
@@ -229,4 +316,12 @@ export function TransactionTable({
       </table>
     </div>
   );
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Request failed";
 }
