@@ -60,6 +60,37 @@ export interface CategoryRuleDTO {
   priority: number;
 }
 
+export interface BankCategoryMappingDTO {
+  id: string;
+  rawBankCategory: string;
+  normalizedBankCategory: string;
+  categoryId: string;
+  categoryName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ObservedBankCategoryDTO {
+  rawBankCategory: string;
+  normalizedBankCategory: string;
+  occurrenceCount: number;
+  accountNames: string[];
+}
+
+export interface BankCategoryMappingCatalogDTO {
+  mappings: BankCategoryMappingDTO[];
+  observedBankCategories: ObservedBankCategoryDTO[];
+}
+
+export type BankCategorySuggestionReason =
+  | "explicit-mapping"
+  | "fuzzy-category-name";
+
+export interface BankCategorySuggestionDTO {
+  filterText: string;
+  reason: BankCategorySuggestionReason;
+}
+
 export interface ScrapeRunDTO {
   id: string;
   accountId: string;

@@ -125,3 +125,11 @@ export function getCompanyMetadata(
 ): CompanyMetadata | undefined {
   return COMPANY_METADATA.find((c) => c.id === companyType);
 }
+
+export function getCompanyTypeIdsByKind(
+  type: CompanyMetadata["type"]
+): string[] {
+  return COMPANY_METADATA.filter((company) => company.type === type).map(
+    (company) => company.id
+  );
+}

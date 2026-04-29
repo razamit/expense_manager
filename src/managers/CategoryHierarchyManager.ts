@@ -114,6 +114,12 @@ export class CategoryHierarchyManager {
       );
     }
 
+    if (parent._count.bankCategoryMappings > 0) {
+      throw new CategoryHierarchyError(
+        "Move or remove bank category mappings from this main category before adding subcategories."
+      );
+    }
+
     if (!categoryId) {
       return;
     }

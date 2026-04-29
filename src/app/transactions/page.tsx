@@ -23,6 +23,11 @@ export default function TransactionsPage() {
     return `${label} (${count})`;
   }
 
+  async function handleCategorize(transaction: TransactionDTO) {
+    setSelectedTransaction(transaction);
+    await vm.refreshBankCategoryMappings();
+  }
+
   const transactionsCard = (
     <Card>
       <CardContent className="p-4">
@@ -31,7 +36,7 @@ export default function TransactionsPage() {
         ) : (
           <TransactionTable
             transactions={vm.transactions}
-            onCategorize={setSelectedTransaction}
+            onCategorize={handleCategorize}
             onToggleExcluded={vm.toggleExcluded}
           />
         )}
@@ -120,6 +125,7 @@ export default function TransactionsPage() {
         open={selectedTransaction !== null}
         transaction={selectedTransaction}
         categories={vm.categories}
+        bankCategoryMappings={vm.bankCategoryMappings}
         onClose={() => setSelectedTransaction(null)}
         onAssign={vm.assignCategory}
         onCreateCategory={vm.createCategory}

@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BankCategoryMappingEditor } from "@/components/categories/BankCategoryMappingEditor";
 import { CategoryList } from "@/components/categories/CategoryList";
 import { CategoryRuleEditor } from "@/components/categories/CategoryRuleEditor";
 import { useCategoriesViewModel } from "@/viewmodels/useCategoriesViewModel";
@@ -199,6 +200,7 @@ export default function CategoriesPage() {
       <Tabs defaultValue="categories">
         <TabsList>
           <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="bank-mappings">Bank Category Mappings</TabsTrigger>
           <TabsTrigger value="rules">Auto-Categorization Rules</TabsTrigger>
         </TabsList>
 
@@ -217,6 +219,26 @@ export default function CategoriesPage() {
                 categories={vm.categories}
                 onEdit={openEditDialog}
                 onDelete={openDeleteDialog}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="bank-mappings">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bank Category Mappings</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                These mappings only prefill the category search inside the assign dialog.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <BankCategoryMappingEditor
+                mappings={vm.bankCategoryMappings}
+                observedBankCategories={vm.observedBankCategories}
+                categories={vm.categories}
+                onAdd={vm.addBankCategoryMapping}
+                onDelete={vm.removeBankCategoryMapping}
               />
             </CardContent>
           </Card>

@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -20,16 +21,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  getLeafCategories,
   sortCategoriesByDisplayName,
 } from "@/lib/category-hierarchy";
+import { getBankCategorySuggestion } from "@/lib/bank-category-suggestions";
 import { Switch } from "@/components/ui/switch";
 import { CategoryTreePicker } from "@/components/transactions/CategoryTreePicker";
-import type { TransactionDTO, CategoryDTO } from "@/types";
+import type {
+  BankCategoryMappingDTO,
+  CategoryDTO,
+  TransactionDTO,
+} from "@/types";
 
 interface CategoryAssignDialogProps {
   open: boolean;
   transaction: TransactionDTO | null;
   categories: CategoryDTO[];
+  bankCategoryMappings: BankCategoryMappingDTO[];
   onClose: () => void;
   onAssign: (
     transactionId: string,
@@ -49,6 +57,7 @@ export function CategoryAssignDialog({
   open,
   transaction,
   categories,
+  bankCategoryMappings,
   onClose,
   onAssign,
   onCreateCategory,
@@ -61,10 +70,17 @@ export function CategoryAssignDialog({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryParentId, setNewCategoryParentId] = useState("none");
+  const [hasEditedSearchQuery, setHasEditedSearchQuery] = useState(false);
 
   const rootCategories = sortCategoriesByDisplayName(
     categories.filter((category) => category.parentId === null)
   );
+  const leafCategories = sortCategoriesByDisplayName(getLeafCategories(categories));
+  const bankCategorySuggestion = getBankCategorySuggestion({
+    bankCategory: transaction?.bankCategory,
+    selectableCategories: leafCategories,
+    mappings: bankCategoryMappings,
+  });
 
   function resetDialogState() {
     setCreateRule(false);
@@ -74,6 +90,7 @@ export function CategoryAssignDialog({
     setShowCreateForm(false);
     setNewCategoryName("");
     setNewCategoryParentId("none");
+    setHasEditedSearchQuery(false);
   }
 
   useEffect(() => {
@@ -85,8 +102,23 @@ export function CategoryAssignDialog({
   useEffect(() => {
     if (open && transaction) {
       setRulePattern(transaction.description);
+      setHasEditedSearchQuery(false);
     }
-  }, [open, transaction?.id]);
+  }, [open, transaction?.id, transaction?.description]);
+
+  useEffect(() => {
+    if (!open || !transaction || hasEditedSearchQuery) {
+      return;
+    }
+
+    setSearchQuery(bankCategorySuggestion?.filterText ?? "");
+  }, [
+    open,
+    transaction?.id,
+    transaction?.bankCategory,
+    bankCategorySuggestion?.filterText,
+    hasEditedSearchQuery,
+  ]);
 
   async function handleSelect(category: CategoryDTO) {
     if (!transaction) return;
@@ -172,6 +204,9 @@ export function CategoryAssignDialog({
       <DialogContent className="w-[96vw] max-w-7xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Assign Category</DialogTitle>
+          <DialogDescription>
+            Filter the category tree, optionally create a rule, and choose a category for this transaction.
+          </DialogDescription>
         </DialogHeader>
 
         {transaction && (
@@ -180,6 +215,20 @@ export function CategoryAssignDialog({
               {transaction.description}
             </p>
             <p>Amount: {transaction.chargedAmount} ILS</p>
+            {transaction.bankCategory && (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full border bg-background px-2.5 py-1 text-foreground" dir="auto">
+                  Bank category: {transaction.bankCategory}
+                </span>
+                <span className="rounded-full border border-dashed px-2.5 py-1">
+                  {bankCategorySuggestion
+                    ? bankCategorySuggestion.reason === "explicit-mapping"
+                      ? `Suggested from mapping: ${bankCategorySuggestion.filterText}`
+                      : `Suggested from closest category name: ${bankCategorySuggestion.filterText}`
+                    : "No confident category suggestion"}
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -187,7 +236,10 @@ export function CategoryAssignDialog({
           <div className="space-y-3">
             <Input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setHasEditedSearchQuery(true);
+                setSearchQuery(e.target.value);
+              }}
               placeholder="Search categories or paths..."
               autoFocus
             />

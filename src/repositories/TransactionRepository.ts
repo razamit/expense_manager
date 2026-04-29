@@ -251,6 +251,41 @@ export class TransactionRepository {
     });
   }
 
+  static async findObservedBankCategoriesForCompanyTypes(
+    companyTypes: string[]
+  ): Promise<Array<{ bankCategory: string; accountName: string }>> {
+    if (companyTypes.length === 0) {
+      return [];
+    }
+
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        bankCategory: { not: null },
+        account: {
+          companyType: { in: companyTypes },
+        },
+      },
+      select: {
+        bankCategory: true,
+        account: {
+          select: {
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    return transactions
+      .filter(
+        (transaction): transaction is typeof transaction & { bankCategory: string } =>
+          transaction.bankCategory !== null
+      )
+      .map((transaction) => ({
+        bankCategory: transaction.bankCategory,
+        accountName: transaction.account.displayName,
+      }));
+  }
+
   static async aggregateByCategory(startDate: Date, endDate: Date) {
     return prisma.transaction.groupBy({
       by: ["categoryId"],

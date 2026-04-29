@@ -14,6 +14,7 @@ const categoryMetadataInclude = {
       transactions: true,
       children: true,
       rules: true,
+      bankCategoryMappings: true,
     },
   },
 } satisfies Prisma.CategoryInclude;

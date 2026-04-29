@@ -77,6 +77,7 @@ model Category {
   children     Category[]     @relation("CategoryHierarchy")
   transactions Transaction[]
   rules        CategoryRule[]
+  bankCategoryMappings BankCategoryMapping[]
   budgets      Budget[]
 }
 
@@ -92,6 +93,18 @@ model CategoryRule {
   category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@index([priority])
+}
+
+model BankCategoryMapping {
+  id                     String   @id @default(cuid())
+  rawBankCategory        String
+  normalizedBankCategory String   @unique
+  categoryId             String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  category               Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
 }
 
 model ScrapeRun {

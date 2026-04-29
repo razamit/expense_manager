@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getCategoryDisplayName } from "@/lib/category-hierarchy";
 import type {
   AccountDTO,
+  BankCategoryMappingDTO,
   CategoryDTO,
   TransactionDTO,
   TransactionFilters,
@@ -13,6 +14,7 @@ interface TransactionsState {
   accounts: AccountDTO[];
   transactions: TransactionDTO[];
   categories: CategoryDTO[];
+  bankCategoryMappings: BankCategoryMappingDTO[];
   sourceCounts: Record<string, number>;
   allSourcesTotal: number;
   total: number;
@@ -36,6 +38,7 @@ export function useTransactionsViewModel() {
     accounts: [],
     transactions: [],
     categories: [],
+    bankCategoryMappings: [],
     sourceCounts: {},
     allSourcesTotal: 0,
     total: 0,
@@ -108,6 +111,12 @@ export function useTransactionsViewModel() {
     setState((prev) => ({ ...prev, categories }));
   }, []);
 
+  const fetchBankCategoryMappings = useCallback(async () => {
+    const response = await fetch("/api/bank-category-mappings");
+    const bankCategoryMappings = await response.json();
+    setState((prev) => ({ ...prev, bankCategoryMappings }));
+  }, []);
+
   const fetchAccounts = useCallback(async () => {
     const response = await fetch("/api/accounts");
     const accounts = await response.json();
@@ -117,6 +126,7 @@ export function useTransactionsViewModel() {
   useEffect(() => {
     fetchTransactions();
     fetchCategories();
+    fetchBankCategoryMappings();
     fetchAccounts();
   }, []);
 
@@ -270,6 +280,7 @@ export function useTransactionsViewModel() {
     createCategory,
     toggleExcluded,
     exportCSV,
+    refreshBankCategoryMappings: fetchBankCategoryMappings,
     refresh: () => fetchTransactions(),
   };
 }
