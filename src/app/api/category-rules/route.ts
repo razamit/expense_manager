@@ -27,8 +27,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { categoryId, matchField, matchPattern, isRegex, priority } = body;
+    const normalizedMatchPattern =
+      typeof matchPattern === "string" ? matchPattern.trim() : "";
 
-    if (!categoryId || !matchPattern) {
+    if (!categoryId || !normalizedMatchPattern) {
       return NextResponse.json(
         { error: "categoryId and matchPattern are required" },
         { status: 400 }
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
     const { rule, autoCategorized } = await CategoryManager.createRule({
       categoryId,
       matchField,
-      matchPattern,
+      matchPattern: normalizedMatchPattern,
       isRegex,
       priority,
     });

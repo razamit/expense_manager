@@ -105,7 +105,7 @@ export class CategoryManager {
     });
     if (!txn) return { autoCategorized: 0 };
 
-    const matchPattern = pattern ?? txn.description;
+    const matchPattern = pattern?.trim() || txn.description.trim() || txn.description;
 
     await CategoryRuleRepository.create({
       categoryId,

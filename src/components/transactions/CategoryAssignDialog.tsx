@@ -82,6 +82,12 @@ export function CategoryAssignDialog({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (open && transaction) {
+      setRulePattern(transaction.description);
+    }
+  }, [open, transaction?.id]);
+
   async function handleSelect(category: CategoryDTO) {
     if (!transaction) return;
 
@@ -93,7 +99,7 @@ export function CategoryAssignDialog({
         transaction.id,
         category.id,
         createRule,
-        createRule ? rulePattern || transaction.description : undefined,
+        createRule ? rulePattern.trim() || transaction.description : undefined,
         category
       );
 
@@ -148,7 +154,7 @@ export function CategoryAssignDialog({
         transaction.id,
         category.id,
         createRule,
-        createRule ? rulePattern || transaction.description : undefined,
+        createRule ? rulePattern.trim() || transaction.description : undefined,
         category
       );
 
@@ -280,10 +286,10 @@ export function CategoryAssignDialog({
                   <Input
                     value={rulePattern}
                     onChange={(e) => setRulePattern(e.target.value)}
-                    placeholder={transaction?.description ?? "Pattern..."}
+                    placeholder="e.g. SPOTIFY"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Existing and future transactions matching this pattern will be auto-categorized.
+                    Edit this down to the stable part of the description, like SPOTIFY.
                   </p>
                 </div>
               )}
