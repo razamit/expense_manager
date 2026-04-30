@@ -191,33 +191,6 @@ export default function StatisticsPage() {
         </TabsContent>
 
         <TabsContent value="yearly" className="mt-0 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Selected Yearly Summary</CardTitle>
-              <CardDescription>{yearlySelectionDescription}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-4">
-                <SummaryMetric label="Total Spending" value={formatAmount(selectedYearlySpending)} tone="text-red-600" />
-                <SummaryMetric label="Total Income" value={formatAmount(selectedYearlyIncome)} tone="text-green-600" />
-                <SummaryMetric
-                  label="Net"
-                  value={formatAmount(selectedYearlyIncome - selectedYearlySpending)}
-                  tone={
-                    selectedYearlyIncome - selectedYearlySpending >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }
-                />
-                <SummaryMetric
-                  label="Selected Categories"
-                  value={vm.selectedYearlyCategoryIds.length.toLocaleString()}
-                  tone="text-foreground"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
           {vm.isYearlyLoading && vm.hasLoadedYearly ? (
             <p className="text-sm text-muted-foreground">
               Refreshing yearly statistics for {vm.selectedYear}...
@@ -227,8 +200,30 @@ export default function StatisticsPage() {
           {vm.isYearlyLoading && !vm.hasLoadedYearly ? (
             <LoadingCard message="Loading yearly statistics..." />
           ) : (
-            <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.5fr)_360px]">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_420px] 2xl:grid-cols-[minmax(0,1.35fr)_480px]">
               <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Selected Yearly Summary</CardTitle>
+                    <CardDescription>{yearlySelectionDescription}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <SummaryMetric label="Total Spending" value={formatAmount(selectedYearlySpending)} tone="text-red-600" />
+                      <SummaryMetric label="Total Income" value={formatAmount(selectedYearlyIncome)} tone="text-green-600" />
+                      <SummaryMetric
+                        label="Net"
+                        value={formatAmount(selectedYearlyIncome - selectedYearlySpending)}
+                        tone={
+                          selectedYearlyIncome - selectedYearlySpending >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <YearlyCategoryTrendChart trend={vm.selectedYearlyAggregateTrend} />
 
                 <div className="grid gap-6 xl:grid-cols-2">
