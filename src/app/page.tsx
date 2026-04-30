@@ -11,15 +11,25 @@ export default function DashboardPage() {
 
   if (vm.isLoading) {
     return (
-      <div className="p-6">
-        <p className="text-muted-foreground">Loading dashboard...</p>
+      <div className="app-page-shell">
+        <p className="text-sm text-muted-foreground">Loading dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+    <div className="app-page-shell">
+      <div className="space-y-2">
+        <p className="app-eyebrow-label">Overview</p>
+        <div className="space-y-2">
+          <h1 className="text-[24px] font-semibold tracking-[-0.01em] text-foreground">
+            Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Track balances, recent activity, uncategorized spending, and anomalies.
+          </p>
+        </div>
+      </div>
 
       <SpendingSummaryCard
         totalExpense={vm.totalExpense}
@@ -28,8 +38,9 @@ export default function DashboardPage() {
       />
 
       {vm.uncategorizedCount > 0 && (
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-          <p className="text-sm font-medium text-yellow-800">
+        <div className="rounded-lg border border-warning/20 bg-warning/10 p-4">
+          <p className="app-eyebrow-label text-warning">Action Required</p>
+          <p className="mt-2 text-sm font-medium text-foreground">
             {vm.uncategorizedCount} uncategorized transaction
             {vm.uncategorizedCount > 1 ? "s" : ""} need attention.
           </p>

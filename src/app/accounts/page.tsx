@@ -26,17 +26,28 @@ export default function AccountsPage() {
 
   if (vm.isLoading) {
     return (
-      <div className="p-6">
-        <p className="text-muted-foreground">Loading accounts...</p>
+      <div className="app-page-shell">
+        <p className="text-sm text-muted-foreground">Loading accounts...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Accounts</h1>
-        <div className="flex gap-2">
+    <div className="app-page-shell">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-2">
+          <p className="app-eyebrow-label">Connected Institutions</p>
+          <div className="space-y-2">
+            <h1 className="text-[24px] font-semibold tracking-[-0.01em] text-foreground">
+              Accounts
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Manage bank connections, shared credentials, and manual scrape runs.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
           {vm.accounts.length > 0 && (
             <Button
               variant="outline"
@@ -57,14 +68,14 @@ export default function AccountsPage() {
       </div>
 
       {vm.accounts.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="app-surface-card flex min-h-[220px] items-center justify-center p-6 text-center">
           <p className="text-muted-foreground">
             No accounts configured yet. Add your first bank or credit card
             account.
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {vm.accounts.map((account) => (
             <AccountCard
               key={account.id}

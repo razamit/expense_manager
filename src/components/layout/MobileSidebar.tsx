@@ -27,15 +27,22 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
 
   return (
     <div className="fixed inset-0 z-50 md:hidden">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="fixed inset-y-0 left-0 w-64 bg-sidebar border-r">
-        <div className="flex h-14 items-center justify-between border-b px-6">
-          <span className="font-bold text-lg">FinanceChecker</span>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+      <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-y-0 left-0 flex w-72 flex-col border-r border-outline-variant bg-sidebar shadow-xl">
+        <div className="flex items-center justify-between border-b border-outline-variant px-5 py-5">
+          <div>
+            <p className="text-base font-black tracking-[-0.02em] text-foreground">
+              FinanceChecker
+            </p>
+            <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              Institutional Grade
+            </p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close navigation">
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <nav className="flex flex-col gap-1 p-3">
+        <nav className="flex flex-1 flex-col gap-1 p-3">
           {NAV_ITEMS.map((item) => {
             const isActive =
               item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -45,18 +52,27 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
                 href={item.href}
                 onClick={onClose}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-md border-l-2 px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] transition-colors",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    ? "border-primary bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "border-transparent text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
                 )}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-4 w-4 shrink-0" />
                 {item.label}
               </Link>
             );
           })}
         </nav>
+
+        <div className="border-t border-outline-variant p-4">
+          <div className="rounded-lg border border-outline-variant bg-surface-container-lowest p-4">
+            <p className="app-eyebrow-label">Secure Session</p>
+            <p className="mt-2 text-sm font-medium text-foreground">
+              Lock the workspace from the header at any time.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

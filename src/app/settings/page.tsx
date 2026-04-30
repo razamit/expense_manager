@@ -89,8 +89,18 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold">Settings</h1>
+    <div className="app-page-shell max-w-3xl">
+      <div className="space-y-2">
+        <p className="app-eyebrow-label">Configuration</p>
+        <div className="space-y-2">
+          <h1 className="text-[24px] font-semibold tracking-[-0.01em] text-foreground">
+            Settings
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Configure scraping scope, update the master password, and run maintenance actions.
+          </p>
+        </div>
+      </div>
 
       <Card>
         <CardHeader>
@@ -115,7 +125,7 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">
               How far back to fetch transactions when scraping. Longer ranges take more time.
               {scrapeMonthsSaved && (
-                <span className="text-green-600 ml-2">Saved!</span>
+                <span className="ml-2 text-positive">Saved!</span>
               )}
             </p>
           </div>
@@ -176,10 +186,10 @@ export default function SettingsPage() {
 
           <div>
             <p className="text-sm text-muted-foreground mb-2">
-              Database location: <code>prisma/dev.db</code>
+              Database location: <span className="font-medium text-foreground">prisma/dev.db</span>
             </p>
             <p className="text-sm text-muted-foreground">
-              Encrypted credentials: <code>config/credentials.enc</code>
+              Encrypted credentials: <span className="font-medium text-foreground">config/credentials.enc</span>
             </p>
           </div>
         </CardContent>

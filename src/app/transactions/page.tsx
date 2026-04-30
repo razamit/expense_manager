@@ -66,7 +66,7 @@ export default function TransactionsPage() {
     <Card>
       <CardContent className="p-4">
         {vm.isLoading ? (
-          <p className="py-4 text-muted-foreground">Loading...</p>
+          <p className="py-8 text-sm text-muted-foreground">Loading transactions...</p>
         ) : (
           <TransactionTable
             transactions={vm.transactions}
@@ -81,8 +81,18 @@ export default function TransactionsPage() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Transactions</h1>
+    <div className="app-page-shell">
+      <div className="space-y-2">
+        <p className="app-eyebrow-label">Review And Classify</p>
+        <div className="space-y-2">
+          <h1 className="text-[24px] font-semibold tracking-[-0.01em] text-foreground">
+            Transactions
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Filter activity, apply category suggestions, and manage exclusions across your imported data.
+          </p>
+        </div>
+      </div>
 
       <TransactionFiltersBar
         filters={vm.filters}
@@ -101,15 +111,15 @@ export default function TransactionsPage() {
           className="space-y-4"
         >
           <div className="-mx-1 overflow-x-auto px-1 pb-1">
-            <TabsList className="h-auto min-w-max justify-start gap-1 rounded-xl bg-muted/60 p-1">
-              <TabsTrigger value="all" className="min-h-11 rounded-lg px-4">
+            <TabsList className="h-auto min-w-max justify-start gap-1 rounded-lg border border-outline-variant bg-surface-container-lowest p-1">
+              <TabsTrigger value="all" className="min-h-10 rounded-md px-4">
                 {renderSourceLabel("All sources", vm.allSourcesTotal)}
               </TabsTrigger>
               {vm.accounts.map((account) => (
                 <TabsTrigger
                   key={account.id}
                   value={account.id}
-                  className="min-h-11 rounded-lg px-4"
+                  className="min-h-10 rounded-md px-4"
                 >
                   {renderSourceLabel(
                     account.displayName,
@@ -133,7 +143,7 @@ export default function TransactionsPage() {
           <p className="text-sm text-muted-foreground">
             {vm.total} transactions
           </p>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -142,7 +152,7 @@ export default function TransactionsPage() {
             >
               Previous
             </Button>
-            <span className="flex items-center text-sm">
+            <span className="app-tabular-data flex items-center text-sm text-muted-foreground">
               Page {vm.page} of {totalPages}
             </span>
             <Button

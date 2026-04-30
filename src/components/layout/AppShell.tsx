@@ -80,8 +80,12 @@ export function AppShell({ children }: AppShellProps) {
 
   if (isCheckingAuth) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-surface-container-low px-6">
+        <div className="app-surface-card flex min-w-[280px] flex-col items-center gap-3 p-6 text-center">
+          <div className="h-2 w-16 rounded-full bg-surface-container-high" />
+          <p className="app-eyebrow-label">FinanceChecker</p>
+          <p className="text-sm text-muted-foreground">Loading secure workspace...</p>
+        </div>
       </div>
     );
   }
@@ -93,15 +97,17 @@ export function AppShell({ children }: AppShellProps) {
         isFirstTime={isFirstTime}
         onSubmit={handlePasswordSubmit}
       />
-      <div className="flex h-screen">
+      <div className="min-h-screen bg-surface-container-low md:pl-72">
         <Sidebar />
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-screen flex-col">
           <TopBar
             onScrapeClick={handleScrapeClick}
             onLockClick={handleLockClick}
             isScraping={isScraping}
           />
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main className="min-w-0 flex-1 bg-surface-container-low">
+            {children}
+          </main>
         </div>
       </div>
     </>

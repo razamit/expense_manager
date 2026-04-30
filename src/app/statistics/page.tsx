@@ -77,26 +77,31 @@ export default function StatisticsPage() {
         : `${vm.selectedYearlyCategoryIds.length} selected categor${vm.selectedYearlyCategoryIds.length === 1 ? "y" : "ies"} in ${vm.selectedYear}`;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="app-page-shell">
       <Tabs
         value={vm.view}
         onValueChange={(value) => vm.changeView(value as typeof vm.view)}
         className="space-y-6"
       >
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Statistics</h1>
-            <p className="text-sm text-muted-foreground">
+          <div className="space-y-2">
+            <p className="app-eyebrow-label">Reporting</p>
+            <div className="space-y-2">
+              <h1 className="text-[24px] font-semibold tracking-[-0.01em] text-foreground">
+                Statistics
+              </h1>
+              <p className="text-sm text-muted-foreground">
               Monthly bars for the selected month and yearly exploration across categories.
-            </p>
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <TabsList className="grid h-auto grid-cols-2 rounded-xl bg-muted/60 p-1">
-              <TabsTrigger value="monthly" className="min-h-11 rounded-lg px-4">
+            <TabsList className="grid h-auto grid-cols-2 rounded-lg border border-outline-variant bg-surface-container-lowest p-1">
+              <TabsTrigger value="monthly" className="min-h-10 rounded-md px-4">
                 Monthly
               </TabsTrigger>
-              <TabsTrigger value="yearly" className="min-h-11 rounded-lg px-4">
+              <TabsTrigger value="yearly" className="min-h-10 rounded-md px-4">
                 Yearly
               </TabsTrigger>
             </TabsList>
@@ -271,8 +276,10 @@ function SummaryMetric({
 }) {
   return (
     <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className={`text-xl font-bold ${tone}`}>{value}</p>
+      <p className="app-eyebrow-label">{label}</p>
+      <p className={`app-tabular-data mt-2 text-2xl font-semibold tracking-[-0.01em] ${tone}`}>
+        {value}
+      </p>
     </div>
   );
 }

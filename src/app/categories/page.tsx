@@ -3,16 +3,22 @@
 import { useState } from "react";
 import { AlertTriangle, Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,11 +35,35 @@ import { useCategoriesViewModel } from "@/viewmodels/useCategoriesViewModel";
 import type { CategoryDTO, CategoryRuleDTO } from "@/types";
 
 const CATEGORY_PALETTE = [
-  "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16",
-  "#22c55e", "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6",
-  "#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899",
-  "#f43f5e", "#0d9488", "#4f46e5", "#7c3aed", "#db2777",
+  "#ef4444",
+  "#f97316",
+  "#f59e0b",
+  "#eab308",
+  "#84cc16",
+  "#22c55e",
+  "#14b8a6",
+  "#06b6d4",
+  "#0ea5e9",
+  "#3b82f6",
+  "#6366f1",
+  "#8b5cf6",
+  "#a855f7",
+  "#d946ef",
+  "#ec4899",
+  "#f43f5e",
+  "#0d9488",
+  "#4f46e5",
+  "#7c3aed",
+  "#db2777",
 ];
+
+type CategoryDeleteImpact = {
+  totalCategoryCount: number;
+  descendantCount: number;
+  transactionCount: number;
+  ruleCount: number;
+  descendantNames: string[];
+};
 
 function randomCategoryColor(): string {
   return CATEGORY_PALETTE[Math.floor(Math.random() * CATEGORY_PALETTE.length)];
@@ -61,7 +91,9 @@ export default function CategoriesPage() {
 
     return category.id !== editCategory.id;
   });
-  const editCategoryHasChildren = Boolean(editCategory && (editCategory.childCount ?? 0) > 0);
+  const editCategoryHasChildren = Boolean(
+    editCategory && (editCategory.childCount ?? 0) > 0
+  );
   const deleteImpact = deleteCategory
     ? buildCategoryDeleteImpact(deleteCategory.id, vm.categories, vm.rules)
     : null;
@@ -187,26 +219,44 @@ export default function CategoriesPage() {
 
   if (vm.isLoading) {
     return (
-      <div className="p-6">
-        <p className="text-muted-foreground">Loading categories...</p>
+      <div className="app-page-shell">
+        <p className="text-sm text-muted-foreground">Loading categories...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Categories</h1>
+    <div className="app-page-shell">
+      <div className="space-y-2">
+        <p className="app-eyebrow-label">Classification System</p>
+        <div className="space-y-2">
+          <h1 className="text-[24px] font-semibold tracking-[-0.01em] text-foreground">
+            Categories
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Maintain the category hierarchy, refine bank mapping hints, and manage categorization rules.
+          </p>
+        </div>
+      </div>
 
-      <Tabs defaultValue="categories">
-        <TabsList>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="bank-mappings">Bank Category Mappings</TabsTrigger>
-          <TabsTrigger value="rules">Auto-Categorization Rules</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="categories" className="space-y-6">
+        <div className="overflow-x-auto pb-1">
+          <TabsList className="h-auto min-w-max justify-start gap-1 rounded-lg border border-outline-variant bg-surface-container-lowest p-1">
+            <TabsTrigger value="categories" className="min-h-10 rounded-md px-4">
+              Categories
+            </TabsTrigger>
+            <TabsTrigger value="bank-mappings" className="min-h-10 rounded-md px-4">
+              Bank Category Mappings
+            </TabsTrigger>
+            <TabsTrigger value="rules" className="min-h-10 rounded-md px-4">
+              Auto-Categorization Rules
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="categories">
+        <TabsContent value="categories" className="mt-0">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <CardTitle>Categories</CardTitle>
               <Button size="sm" onClick={openAddDialog}>
                 <Plus className="h-4 w-4" />
@@ -224,7 +274,7 @@ export default function CategoriesPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="bank-mappings">
+        <TabsContent value="bank-mappings" className="mt-0">
           <Card>
             <CardHeader>
               <CardTitle>Bank Category Mappings</CardTitle>
@@ -244,7 +294,7 @@ export default function CategoriesPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="rules">
+        <TabsContent value="rules" className="mt-0">
           <Card>
             <CardHeader>
               <CardTitle>Auto-Categorization Rules</CardTitle>
@@ -266,8 +316,8 @@ export default function CategoriesPage() {
 
       <Dialog
         open={showAddDialog || editCategory !== null}
-        onOpenChange={(v) => {
-          if (!v) {
+        onOpenChange={(open) => {
+          if (!open) {
             closeDialog();
           }
         }}
@@ -283,10 +333,11 @@ export default function CategoriesPage() {
               <Label>Name</Label>
               <Input
                 value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
+                onChange={(event) => setNewCategoryName(event.target.value)}
                 placeholder="Category name"
               />
             </div>
+
             <div className="space-y-2">
               <Label>Parent Category</Label>
               <Select
@@ -316,29 +367,28 @@ export default function CategoriesPage() {
                 </p>
               )}
             </div>
+
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex gap-2 items-center">
+              <div className="flex items-center gap-2">
                 <input
                   type="color"
                   value={newCategoryColor}
-                  onChange={(e) => setNewCategoryColor(e.target.value)}
-                  className="h-9 w-9 rounded border cursor-pointer"
+                  onChange={(event) => setNewCategoryColor(event.target.value)}
+                  className="h-9 w-9 cursor-pointer rounded border"
                 />
                 <Input
                   value={newCategoryColor}
-                  onChange={(e) => setNewCategoryColor(e.target.value)}
+                  onChange={(event) => setNewCategoryColor(event.target.value)}
                   className="flex-1"
                 />
               </div>
             </div>
+
             {formError && <p className="text-sm text-destructive">{formError}</p>}
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={closeDialog}
-            >
+            <Button variant="outline" onClick={closeDialog}>
               Cancel
             </Button>
             <Button
@@ -353,8 +403,8 @@ export default function CategoriesPage() {
 
       <Dialog
         open={deleteCategory !== null}
-        onOpenChange={(v) => {
-          if (!v) {
+        onOpenChange={(open) => {
+          if (!open) {
             closeDeleteDialog();
           }
         }}
@@ -410,7 +460,11 @@ export default function CategoriesPage() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeDeleteDialog} disabled={isDeletingCategory}>
+            <Button
+              variant="outline"
+              onClick={closeDeleteDialog}
+              disabled={isDeletingCategory}
+            >
               Cancel
             </Button>
             <Button
@@ -426,14 +480,6 @@ export default function CategoriesPage() {
     </div>
   );
 }
-
-type CategoryDeleteImpact = {
-  totalCategoryCount: number;
-  descendantCount: number;
-  transactionCount: number;
-  ruleCount: number;
-  descendantNames: string[];
-};
 
 function buildCategoryDeleteImpact(
   rootCategoryId: string,
