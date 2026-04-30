@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FinanceChecker - Statistics</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Custom scrollbar for tabular data areas */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #dcd9db; /* surface-dim */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c6c6cd; /* outline-variant */
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-fixed": "#fcdeb5",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-tertiary-container": "#98805d",
+                        "on-tertiary-fixed-variant": "#574425",
+                        "tertiary-container": "#271901",
+                        "primary-container": "#131b2e",
+                        "on-secondary-container": "#54647a",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-bright": "#fcf8fa",
+                        "surface-container": "#f0edef",
+                        "on-surface-variant": "#45464d",
+                        "surface-tint": "#565e74",
+                        "inverse-on-surface": "#f3f0f2",
+                        "primary-fixed": "#dae2fd",
+                        "inverse-surface": "#303032",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#000000",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "background": "#fcf8fa",
+                        "on-surface": "#1b1b1d",
+                        "surface": "#fcf8fa",
+                        "on-tertiary-fixed": "#271901",
+                        "primary": "#000000",
+                        "on-primary-fixed": "#131b2e",
+                        "on-background": "#1b1b1d",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-container-high": "#eae7e9",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-container-low": "#f6f3f5",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e4e2e4",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#bec6e0",
+                        "secondary": "#505f76",
+                        "on-primary-container": "#7c839b",
+                        "tertiary-fixed-dim": "#dec29a",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e4e2e4",
+                        "secondary-container": "#d0e1fb",
+                        "outline-variant": "#c6c6cd",
+                        "outline": "#76777d",
+                        "surface-dim": "#dcd9db",
+                        "primary-fixed-dim": "#bec6e0",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "xs": "4px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "gutter": "20px",
+                        "margin": "40px",
+                        "base": "4px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "data-tabular": ["Inter", "sans-serif"],
+                        "label-sm": ["Inter", "sans-serif"],
+                        "h3": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "h2": ["Inter", "sans-serif"],
+                        "h1": ["Inter", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"]
+                    },
+                    fontSize: {
+                        "display": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "data-tabular": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "h3": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "h2": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "h1": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md text-body-md h-screen flex overflow-hidden antialiased">
+<!-- SideNavBar (Shared Component) -->
+<nav class="fixed left-0 top-0 h-screen flex flex-col justify-between py-4 border-r overflow-y-auto z-50 w-64 border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+<div>
+<!-- Header -->
+<div class="px-6 pb-6 border-b border-slate-200 dark:border-slate-800 mb-4 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-container text-on-primary-container flex items-center justify-center font-bold">F</div>
+<div>
+<h1 class="text-xl font-black text-slate-900 dark:text-slate-50 tracking-tight">FinanceChecker</h1>
+<p class="font-sans text-xs font-medium uppercase tracking-wider text-slate-500">Institutional Grade</p>
+</div>
+</div>
+<!-- Main Navigation -->
+<ul class="flex flex-col w-full font-sans text-xs font-medium uppercase tracking-wider">
+<li>
+<a class="flex items-center gap-3 w-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+                        Dashboard
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 w-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">account_balance</span>
+                        Accounts
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 w-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">receipt_long</span>
+                        Transactions
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 w-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">category</span>
+                        Categories
+                    </a>
+</li>
+<li>
+<!-- Active State -->
+<a class="flex items-center gap-3 w-full bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-50 border-r-4 border-slate-900 dark:border-slate-50 px-4 py-3 duration-150 ease-in-out transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">query_stats</span>
+                        Statistics
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 w-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">settings</span>
+                        Settings
+                    </a>
+</li>
+</ul>
+</div>
+<!-- Footer Navigation -->
+<ul class="flex flex-col w-full font-sans text-xs font-medium uppercase tracking-wider pt-4 border-t border-slate-200 dark:border-slate-800">
+<li>
+<a class="flex items-center gap-3 w-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">help</span>
+                    Help Center
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 w-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">logout</span>
+                    Log Out
+                </a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 flex flex-col h-full overflow-hidden bg-surface-container-lowest">
+<!-- Header Section -->
+<header class="flex-none px-8 py-6 border-b border-surface-container flex items-center justify-between bg-surface-container-lowest z-10">
+<h2 class="font-h1 text-h1 text-on-surface">Statistics</h2>
+<div class="flex items-center gap-6">
+<!-- Month Picker -->
+<div class="flex items-center gap-2 bg-surface-container-low rounded-lg p-1 border border-surface-container">
+<button aria-label="Previous Month" class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-variant text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<span class="font-h3 text-h3 text-on-surface min-w-[140px] text-center">October 2023</span>
+<button aria-label="Next Month" class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-variant text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+<!-- Segmented Control -->
+<div class="flex items-center bg-surface-container-low p-1 rounded-lg border border-surface-container">
+<button class="px-5 py-1.5 rounded-md bg-surface-container-lowest border border-outline-variant shadow-[0_1px_2px_rgba(0,0,0,0.05)] font-label-sm text-label-sm text-on-surface transition-all">Monthly</button>
+<button class="px-5 py-1.5 rounded-md font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-all border border-transparent">Yearly</button>
+</div>
+</div>
+</header>
+<!-- Scrollable Dashboard Content -->
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-[1440px] mx-auto space-y-6">
+<!-- Summary Cards Row -->
+<div class="grid grid-cols-4 gap-6">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-5 flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Total Spending</span>
+<div class="flex items-baseline gap-2">
+<span class="font-display text-display text-on-surface">$32,150.50</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-5 flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Total Income</span>
+<div class="flex items-baseline gap-2">
+<span class="font-display text-display text-on-surface">$45,230.00</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-5 flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Net Cash Flow</span>
+<div class="flex items-baseline gap-2">
+<span class="font-display text-display text-on-surface">$13,079.50</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-5 flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Transactions</span>
+<div class="flex items-baseline gap-2">
+<span class="font-display text-display text-on-surface">142</span>
+</div>
+</div>
+</div>
+<!-- Charts Row -->
+<div class="grid grid-cols-12 gap-6 h-[400px]">
+<!-- Donut Chart Card -->
+<div class="col-span-4 bg-surface-container-lowest border border-outline-variant rounded-lg flex flex-col overflow-hidden">
+<div class="px-5 py-4 border-b border-surface-container flex justify-between items-center bg-surface-container-low">
+<h3 class="font-h3 text-h3 text-on-surface">Spending by Category</h3>
+<button class="text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-[20px]">more_horiz</span></button>
+</div>
+<div class="flex-1 flex flex-col items-center justify-center p-6 relative">
+<!-- CSS Donut Chart Representation -->
+<div class="relative w-48 h-48 rounded-full flex items-center justify-center" style="background: conic-gradient(#131b2e 0% 45%, #54647a 45% 75%, #b7c8e1 75% 90%, #e4e2e4 90% 100%);">
+<div class="w-36 h-36 bg-surface-container-lowest rounded-full flex flex-col items-center justify-center shadow-[inset_0_0_10px_rgba(0,0,0,0.05)]">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Top Expense</span>
+<span class="font-h2 text-h2 text-on-surface mt-1">Payroll</span>
+</div>
+</div>
+<!-- Legend -->
+<div class="mt-8 w-full grid grid-cols-2 gap-x-4 gap-y-3">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-sm bg-[#131b2e]"></div>
+<span class="font-body-md text-body-md text-on-surface flex-1 truncate">Payroll</span>
+<span class="font-data-tabular text-data-tabular text-on-surface-variant">45%</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-sm bg-[#54647a]"></div>
+<span class="font-body-md text-body-md text-on-surface flex-1 truncate">Software</span>
+<span class="font-data-tabular text-data-tabular text-on-surface-variant">30%</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-sm bg-[#b7c8e1]"></div>
+<span class="font-body-md text-body-md text-on-surface flex-1 truncate">Marketing</span>
+<span class="font-data-tabular text-data-tabular text-on-surface-variant">15%</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-sm bg-[#e4e2e4]"></div>
+<span class="font-body-md text-body-md text-on-surface flex-1 truncate">Other</span>
+<span class="font-data-tabular text-data-tabular text-on-surface-variant">10%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Trend Line Chart Card -->
+<div class="col-span-8 bg-surface-container-lowest border border-outline-variant rounded-lg flex flex-col overflow-hidden">
+<div class="px-5 py-4 border-b border-surface-container flex justify-between items-center bg-surface-container-low">
+<h3 class="font-h3 text-h3 text-on-surface">Income vs Spending</h3>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-1 bg-[#131b2e]"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Income</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-1 bg-[#b7c8e1] border-t border-dashed border-[#54647a]"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Spending</span>
+</div>
+</div>
+</div>
+<div class="flex-1 p-6 flex flex-col">
+<!-- Analytical Chart Canvas (SVG Representation) -->
+<div class="flex-1 relative border-l border-b border-surface-container-high w-full">
+<!-- Y Axis Labels -->
+<div class="absolute -left-12 bottom-0 w-10 h-full flex flex-col justify-between items-end font-data-tabular text-[11px] text-on-surface-variant py-2">
+<span>$60k</span>
+<span>$45k</span>
+<span>$30k</span>
+<span>$15k</span>
+<span>$0</span>
+</div>
+<!-- Horizontal Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between">
+<div class="border-b border-surface-container w-full h-0"></div>
+<div class="border-b border-surface-container w-full h-0"></div>
+<div class="border-b border-surface-container w-full h-0"></div>
+<div class="border-b border-surface-container w-full h-0"></div>
+<div class="w-full h-0"></div> <!-- Bottom line handled by container -->
+</div>
+<!-- Chart Lines (Abstract representation) -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<!-- Income Line -->
+<path d="M 0 80 Q 10 70, 20 60 T 40 40 T 60 20 T 80 30 T 100 10" fill="none" stroke="#131b2e" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<!-- Income Area (subtle) -->
+<path d="M 0 80 Q 10 70, 20 60 T 40 40 T 60 20 T 80 30 T 100 10 L 100 100 L 0 100 Z" fill="rgba(19, 27, 46, 0.05)"></path>
+<!-- Spending Line -->
+<path d="M 0 90 Q 15 85, 30 75 T 60 80 T 80 65 T 100 70" fill="none" stroke="#54647a" stroke-dasharray="4 4" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+</svg>
+<!-- X Axis Labels -->
+<div class="absolute -bottom-8 left-0 w-full flex justify-between font-data-tabular text-[11px] text-on-surface-variant px-2">
+<span>Oct 1</span>
+<span>Oct 8</span>
+<span>Oct 15</span>
+<span>Oct 22</span>
+<span>Oct 31</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Breakdown Panel (Data Table) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden flex flex-col">
+<div class="px-5 py-4 border-b border-surface-container bg-surface-container-low flex justify-between items-center">
+<h3 class="font-h3 text-h3 text-on-surface">Category Breakdown</h3>
+<!-- Search / Filter -->
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">search</span>
+<input class="pl-9 pr-4 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-md font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-64 transition-all" placeholder="Search categories..." type="text"/>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr>
+<th class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider py-3 px-5 border-b border-surface-container-high w-[40%]">Category</th>
+<th class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider py-3 px-5 border-b border-surface-container-high text-right">Amount</th>
+<th class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider py-3 px-5 border-b border-surface-container-high text-right">% of Total</th>
+<th class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider py-3 px-5 border-b border-surface-container-high text-right">Avg / Month</th>
+</tr>
+</thead>
+<tbody class="font-data-tabular text-data-tabular text-on-surface divide-y divide-surface-container">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-3 px-5 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">payments</span>
+</div>
+<span class="font-body-md font-medium">Payroll &amp; Compensation</span>
+</td>
+<td class="py-3 px-5 text-right">$14,467.00</td>
+<td class="py-3 px-5 text-right text-on-surface-variant">45.0%</td>
+<td class="py-3 px-5 text-right text-on-surface-variant">$14,200.00</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-3 px-5 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">cloud</span>
+</div>
+<span class="font-body-md font-medium">Software Subscriptions</span>
+</td>
+<td class="py-3 px-5 text-right">$9,645.15</td>
+<td class="py-3 px-5 text-right text-on-surface-variant">30.0%</td>
+<td class="py-3 px-5 text-right text-on-surface-variant">$9,500.00</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-3 px-5 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">campaign</span>
+</div>
+<span class="font-body-md font-medium">Marketing &amp; Ads</span>
+</td>
+<td class="py-3 px-5 text-right">$4,822.50</td>
+<td class="py-3 px-5 text-right text-on-surface-variant">15.0%</td>
+<td class="py-3 px-5 text-right text-on-surface-variant">$5,100.00</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-3 px-5 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">flight_takeoff</span>
+</div>
+<span class="font-body-md font-medium">Travel &amp; Entertainment</span>
+</td>
+<td class="py-3 px-5 text-right">$2,100.00</td>
+<td class="py-3 px-5 text-right text-on-surface-variant">6.5%</td>
+<td class="py-3 px-5 text-right text-on-surface-variant">$1,800.00</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-3 px-5 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">home_work</span>
+</div>
+<span class="font-body-md font-medium">Office Supplies</span>
+</td>
+<td class="py-3 px-5 text-right">$1,115.85</td>
+<td class="py-3 px-5 text-right text-on-surface-variant">3.5%</td>
+<td class="py-3 px-5 text-right text-on-surface-variant">$1,200.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

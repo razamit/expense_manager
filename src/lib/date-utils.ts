@@ -28,6 +28,22 @@ export function getMonthRange(year: number, month: number) {
   return { startDate, endDate };
 }
 
+export function getYearRange(year: number) {
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+  return { startDate, endDate };
+}
+
+export function getMonthKey(year: number, month: number): string {
+  return `${year}-${String(month + 1).padStart(2, "0")}`;
+}
+
+export function getShortMonthLabel(year: number, month: number): string {
+  return new Date(year, month, 1).toLocaleDateString("en-IL", {
+    month: "short",
+  });
+}
+
 export function getMonthsAgo(months: number): Date {
   const date = new Date();
   date.setMonth(date.getMonth() - months);

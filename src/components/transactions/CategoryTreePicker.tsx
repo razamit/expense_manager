@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCategoryDisplayName } from "@/lib/category-hierarchy";
@@ -11,6 +11,7 @@ interface CategoryTreePickerProps {
   categories: CategoryDTO[];
   searchQuery: string;
   disabled?: boolean;
+  selectedCategoryId?: string | null;
   onSelect: (category: CategoryDTO) => void;
 }
 
@@ -23,9 +24,10 @@ export function CategoryTreePicker({
   categories,
   searchQuery,
   disabled = false,
+  selectedCategoryId = null,
   onSelect,
 }: CategoryTreePickerProps) {
-  const branches = buildCategoryBranches(categories);
+  const branches = useMemo(() => buildCategoryBranches(categories), [categories]);
   const [expandedRootIds, setExpandedRootIds] = useState<string[]>(() =>
     branches.map(({ root }) => root.id)
   );
@@ -103,6 +105,7 @@ export function CategoryTreePicker({
                 category={root}
                 childCount={children.length}
                 isExpanded={isExpanded}
+                isSelected={selectedCategoryId === root.id}
                 disabled={disabled}
                 onSelect={onSelect}
                 onToggle={() => {
@@ -125,6 +128,7 @@ export function CategoryTreePicker({
                       <ChildCategoryRow
                         key={category.id}
                         category={category}
+                        isSelected={selectedCategoryId === category.id}
                         disabled={disabled}
                         onSelect={onSelect}
                       />
@@ -144,6 +148,7 @@ function RootCategoryRow({
   category,
   childCount,
   isExpanded,
+  isSelected,
   disabled,
   onSelect,
   onToggle,
@@ -151,6 +156,7 @@ function RootCategoryRow({
   category: CategoryDTO;
   childCount: number;
   isExpanded: boolean;
+  isSelected: boolean;
   disabled: boolean;
   onSelect: (category: CategoryDTO) => void;
   onToggle: () => void;
@@ -159,31 +165,41 @@ function RootCategoryRow({
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2.5">
+      {hasChildren ? (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onToggle}
+          aria-label={isExpanded ? `Collapse ${category.name}` : `Expand ${category.name}`}
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors",
+            disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-muted/60"
+          )}
+        >
+          {isExpanded ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+        </button>
+      ) : (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center text-muted-foreground" />
+      )}
+
       <button
         type="button"
         disabled={disabled}
-        onClick={() => {
-          if (hasChildren) {
-            onToggle();
-            return;
-          }
-
-          onSelect(category);
-        }}
+        onClick={() => onSelect(category)}
         className={cn(
-          "flex min-w-0 flex-1 items-center gap-3 text-left transition-colors",
-          disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:text-foreground"
+          "flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors",
+          disabled
+            ? "cursor-not-allowed opacity-50"
+            : isSelected
+              ? "cursor-pointer bg-primary/10 text-foreground ring-1 ring-primary/25"
+              : "cursor-pointer hover:bg-muted/60 hover:text-foreground"
         )}
+        aria-pressed={isSelected}
       >
-        <span className="flex h-4 w-4 items-center justify-center text-muted-foreground">
-          {hasChildren ? (
-            isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )
-          ) : null}
-        </span>
         <span
           className="h-3 w-3 shrink-0 rounded-full"
           style={{ backgroundColor: category.color ?? "#737373" }}
@@ -201,7 +217,7 @@ function RootCategoryRow({
       </button>
 
       <span className="shrink-0 text-xs text-muted-foreground">
-        {hasChildren ? "Expand" : "Select"}
+        {isSelected ? "Selected" : hasChildren ? "Select" : "Select"}
       </span>
     </div>
   );
@@ -209,10 +225,12 @@ function RootCategoryRow({
 
 function ChildCategoryRow({
   category,
+  isSelected,
   disabled,
   onSelect,
 }: {
   category: CategoryDTO;
+  isSelected: boolean;
   disabled: boolean;
   onSelect: (category: CategoryDTO) => void;
 }) {
@@ -221,11 +239,14 @@ function ChildCategoryRow({
       type="button"
       disabled={disabled}
       onClick={() => onSelect(category)}
+      aria-pressed={isSelected}
       className={cn(
         "flex w-full items-start gap-3 rounded-lg border bg-background px-3 py-2.5 text-left transition-colors",
         disabled
           ? "cursor-not-allowed opacity-50"
-          : "cursor-pointer hover:border-foreground/20 hover:bg-muted"
+          : isSelected
+            ? "cursor-pointer border-primary/30 bg-primary/10"
+            : "cursor-pointer hover:border-foreground/20 hover:bg-muted"
       )}
     >
       <span
@@ -312,12 +333,21 @@ function syncExpandedRootIds(
   }
 
   if (!searchQuery.trim()) {
-    return nextIds;
+    return haveSameIds(currentIds, nextIds) ? currentIds : nextIds;
   }
 
   const matchingRootIds = branches
     .filter((branch) => filterBranch(branch, searchQuery.trim().toLowerCase()) !== null)
     .map(({ root }) => root.id);
 
-  return Array.from(new Set([...nextIds, ...matchingRootIds]));
+  const mergedIds = Array.from(new Set([...nextIds, ...matchingRootIds]));
+  return haveSameIds(currentIds, mergedIds) ? currentIds : mergedIds;
+}
+
+function haveSameIds(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
 }

@@ -154,6 +154,47 @@ export interface IncomeExpenseTrend {
   net: number;
 }
 
+export type StatisticsViewMode = "monthly" | "yearly";
+
+export interface StatisticsYearlyOverview {
+  year: number;
+  spending: SpendingByCategory[];
+  income: SpendingByCategory[];
+  trend: IncomeExpenseTrend[];
+}
+
+export interface CategoryYearlyTrendPoint {
+  month: string;
+  label: string;
+  income: number;
+  expense: number;
+  net: number;
+  transactionCount: number;
+}
+
+export interface CategoryYearlySummary {
+  categoryId: string;
+  categoryName: string;
+  categoryColor: string;
+  totalIncome: number;
+  totalExpense: number;
+  net: number;
+  transactionCount: number;
+}
+
+export interface CategoryYearlyTrend {
+  year: number;
+  categoryId: string;
+  categoryName: string;
+  categoryColor: string;
+  totalIncome: number;
+  totalExpense: number;
+  net: number;
+  transactionCount: number;
+  months: CategoryYearlyTrendPoint[];
+  childCategories: CategoryYearlySummary[];
+}
+
 export interface AnomalyAlert {
   type: "high_spending" | "new_recurring" | "large_transaction" | "missing_expected";
   severity: "warning" | "alert";

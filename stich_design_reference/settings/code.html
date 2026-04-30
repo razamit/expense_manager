@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FinanceChecker - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#fcdeb5",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-tertiary-container": "#98805d",
+                        "on-tertiary-fixed-variant": "#574425",
+                        "tertiary-container": "#271901",
+                        "primary-container": "#131b2e",
+                        "on-secondary-container": "#54647a",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-bright": "#fcf8fa",
+                        "surface-container": "#f0edef",
+                        "on-surface-variant": "#45464d",
+                        "surface-tint": "#565e74",
+                        "inverse-on-surface": "#f3f0f2",
+                        "primary-fixed": "#dae2fd",
+                        "inverse-surface": "#303032",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#000000",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "background": "#fcf8fa",
+                        "on-surface": "#1b1b1d",
+                        "surface": "#fcf8fa",
+                        "on-tertiary-fixed": "#271901",
+                        "primary": "#000000",
+                        "on-primary-fixed": "#131b2e",
+                        "on-background": "#1b1b1d",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-container-high": "#eae7e9",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-container-low": "#f6f3f5",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e4e2e4",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#bec6e0",
+                        "secondary": "#505f76",
+                        "on-primary-container": "#7c839b",
+                        "tertiary-fixed-dim": "#dec29a",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e4e2e4",
+                        "secondary-container": "#d0e1fb",
+                        "outline-variant": "#c6c6cd",
+                        "outline": "#76777d",
+                        "surface-dim": "#dcd9db",
+                        "primary-fixed-dim": "#bec6e0",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "gutter": "20px",
+                        "margin": "40px",
+                        "base": "4px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "display": ["Inter"],
+                        "data-tabular": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "h3": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "h2": ["Inter"],
+                        "h1": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "data-tabular": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "h3": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "h2": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "h1": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex antialiased">
+<!-- SideNavBar Component -->
+<nav class="fixed left-0 top-0 h-screen flex flex-col justify-between py-4 border-r border-slate-200 dark:border-slate-800 overflow-y-auto z-50 w-64 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans text-xs font-medium uppercase tracking-wider hidden md:flex">
+<div>
+<!-- Header -->
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<div class="text-xl font-black text-slate-900 dark:text-slate-50 tracking-tighter normal-case">FinanceChecker</div>
+<div class="text-[10px] text-slate-500 normal-case mt-0.5">Institutional Grade</div>
+</div>
+</div>
+<!-- Main Navigation -->
+<ul class="flex flex-col space-y-1">
+<li>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+                        Dashboard
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg">account_balance</span>
+                        Accounts
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg">receipt_long</span>
+                        Transactions
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg">category</span>
+                        Categories
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg">query_stats</span>
+                        Statistics
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-50 border-r-4 border-slate-900 dark:border-slate-50 px-4 py-3 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">settings</span>
+                        Settings
+                    </a>
+</li>
+</ul>
+</div>
+<!-- Footer Navigation -->
+<ul class="flex flex-col space-y-1 mt-8">
+<li>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg">help</span>
+                    Help Center
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 px-4 py-3 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-lg">logout</span>
+                    Log Out
+                </a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-0 md:ml-64 p-margin">
+<div class="max-w-3xl mx-auto">
+<header class="mb-xl border-b border-outline-variant pb-md">
+<h1 class="font-h1 text-h1 text-on-surface">Settings</h1>
+</header>
+<div class="space-y-lg">
+<!-- Card 1: Scraping & History -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT p-lg">
+<div class="mb-md">
+<h2 class="font-h2 text-h2 text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+                            Scraping &amp; History
+                        </h2>
+</div>
+<div class="space-y-sm">
+<label class="block font-label-sm text-label-sm text-on-surface uppercase">Transaction History Range</label>
+<!-- Segmented Control implementation -->
+<div class="inline-flex rounded-DEFAULT border border-outline-variant bg-surface-container-low p-xs">
+<button class="px-md py-sm rounded-sm font-data-tabular text-data-tabular text-on-surface-variant hover:text-on-surface transition-colors">1 month</button>
+<button class="px-md py-sm rounded-sm font-data-tabular text-data-tabular text-on-surface-variant hover:text-on-surface transition-colors">3 months</button>
+<button class="px-md py-sm rounded-sm bg-surface-container-lowest border border-outline-variant font-data-tabular text-data-tabular text-on-surface shadow-sm">6 months</button>
+<button class="px-md py-sm rounded-sm font-data-tabular text-data-tabular text-on-surface-variant hover:text-on-surface transition-colors">12 months</button>
+<button class="px-md py-sm rounded-sm font-data-tabular text-data-tabular text-on-surface-variant hover:text-on-surface transition-colors">24 months</button>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">info</span>
+                            Longer ranges take more time to scrape.
+                        </p>
+</div>
+</section>
+<!-- Card 2: Security -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT p-lg">
+<div class="mb-md">
+<h2 class="font-h2 text-h2 text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">security</span>
+                            Security
+                        </h2>
+</div>
+<div class="border-t border-outline-variant pt-md mb-md">
+<h3 class="font-h3 text-h3 text-on-surface mb-md">Change Master Password</h3>
+<form class="space-y-md max-w-md">
+<div class="space-y-xs">
+<label class="block font-label-sm text-label-sm text-on-surface uppercase" for="current-pwd">Current Password</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-DEFAULT px-md py-sm font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" id="current-pwd" placeholder="••••••••" type="password"/>
+</div>
+<div class="space-y-xs">
+<label class="block font-label-sm text-label-sm text-on-surface uppercase" for="new-pwd">New Password</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-DEFAULT px-md py-sm font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" id="new-pwd" placeholder="••••••••" type="password"/>
+</div>
+<div class="space-y-xs pb-sm">
+<label class="block font-label-sm text-label-sm text-on-surface uppercase" for="confirm-pwd">Confirm New Password</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-DEFAULT px-md py-sm font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" id="confirm-pwd" placeholder="••••••••" type="password"/>
+</div>
+<button class="bg-primary text-on-primary font-label-sm text-label-sm uppercase px-lg py-sm rounded-DEFAULT hover:opacity-90 transition-opacity flex items-center gap-sm" type="button">
+                                Update Password
+                            </button>
+</form>
+</div>
+</section>
+<!-- Card 3: Data Management -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT p-lg">
+<div class="mb-md">
+<h2 class="font-h2 text-h2 text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">database</span>
+                            Data Management
+                        </h2>
+</div>
+<div class="border-t border-outline-variant pt-md flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div>
+<h3 class="font-h3 text-h3 text-on-surface mb-xs">Re-categorize Transactions</h3>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-lg">
+                                Re-run all categorization rules against existing uncategorized transactions.
+                            </p>
+</div>
+<button class="border border-outline bg-transparent text-on-surface font-label-sm text-label-sm uppercase px-lg py-sm rounded-DEFAULT hover:bg-surface-container-low transition-colors whitespace-nowrap" type="button">
+                            Re-categorize Now
+                        </button>
+</div>
+</section>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Categories - FinanceChecker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed": "#fcdeb5",
+                      "on-error-container": "#93000a",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-tertiary-container": "#98805d",
+                      "on-tertiary-fixed-variant": "#574425",
+                      "tertiary-container": "#271901",
+                      "primary-container": "#131b2e",
+                      "on-secondary-container": "#54647a",
+                      "on-secondary-fixed": "#0b1c30",
+                      "surface-bright": "#fcf8fa",
+                      "surface-container": "#f0edef",
+                      "on-surface-variant": "#45464d",
+                      "surface-tint": "#565e74",
+                      "inverse-on-surface": "#f3f0f2",
+                      "primary-fixed": "#dae2fd",
+                      "inverse-surface": "#303032",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary": "#000000",
+                      "on-primary-fixed-variant": "#3f465c",
+                      "background": "#fcf8fa",
+                      "on-surface": "#1b1b1d",
+                      "surface": "#fcf8fa",
+                      "on-tertiary-fixed": "#271901",
+                      "primary": "#000000",
+                      "on-primary-fixed": "#131b2e",
+                      "on-background": "#1b1b1d",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "surface-container-high": "#eae7e9",
+                      "secondary-fixed": "#d3e4fe",
+                      "surface-container-low": "#f6f3f5",
+                      "error-container": "#ffdad6",
+                      "surface-variant": "#e4e2e4",
+                      "on-error": "#ffffff",
+                      "inverse-primary": "#bec6e0",
+                      "secondary": "#505f76",
+                      "on-primary-container": "#7c839b",
+                      "tertiary-fixed-dim": "#dec29a",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "surface-container-highest": "#e4e2e4",
+                      "secondary-container": "#d0e1fb",
+                      "outline-variant": "#c6c6cd",
+                      "outline": "#76777d",
+                      "surface-dim": "#dcd9db",
+                      "primary-fixed-dim": "#bec6e0",
+                      "on-primary": "#ffffff",
+                      "error": "#ba1a1a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "xl": "32px",
+                      "sm": "8px",
+                      "gutter": "20px",
+                      "margin": "40px",
+                      "base": "4px",
+                      "md": "16px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "display": [
+                              "Inter"
+                      ],
+                      "data-tabular": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "h3": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "h2": [
+                              "Inter"
+                      ],
+                      "h1": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "data-tabular": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h3": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h2": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h1": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased flex flex-col md:flex-row min-h-screen">
+<!-- SideNavBar (Web) -->
+<nav class="hidden md:flex bg-surface-container-lowest text-on-surface font-label-sm uppercase tracking-wider docked left-0 h-full border-r border-outline-variant w-64 flat no shadows duration-150 ease-in-out fixed top-0 flex-col justify-between py-4 overflow-y-auto z-50">
+<div>
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-DEFAULT bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[20px]">account_balance</span>
+</div>
+<div>
+<div class="font-display text-h3 text-on-surface">FinanceChecker</div>
+<div class="font-label-sm text-[10px] text-on-surface-variant">Institutional Grade</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col space-y-1 px-2">
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low transition-all px-4 py-3 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low transition-all px-4 py-3 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined">account_balance</span>
+<span>Accounts</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low transition-all px-4 py-3 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span>Transactions</span>
+</a>
+<a class="flex items-center gap-3 bg-surface-container-high text-on-surface border-l-4 border-primary px-4 py-3" href="#">
+<span class="material-symbols-outlined">category</span>
+<span>Categories</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low transition-all px-4 py-3 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span>Statistics</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low transition-all px-4 py-3 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</div>
+<div class="flex flex-col space-y-1 px-2 mt-auto pt-4 border-t border-outline-variant">
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low transition-all px-4 py-3 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined">help</span>
+<span>Help Center</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low transition-all px-4 py-3 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Log Out</span>
+</a>
+</div>
+</nav>
+<!-- TopNavBar (Mobile) -->
+<header class="md:hidden bg-surface-container-lowest text-on-surface font-label-sm docked full-width top-0 border-b border-outline-variant flat no shadows flex justify-between items-center h-14 px-6 w-full z-40 sticky">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-DEFAULT bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[16px]">account_balance</span>
+</div>
+<span class="font-display text-h3 tracking-tight">FinanceChecker</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined cursor-pointer hover:opacity-80 transition-opacity">sync</span>
+<span class="material-symbols-outlined cursor-pointer hover:opacity-80 transition-opacity">lock</span>
+<span class="material-symbols-outlined cursor-pointer hover:opacity-80 transition-opacity">account_circle</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 p-gutter md:p-margin flex flex-col gap-lg max-w-7xl mx-auto w-full">
+<!-- Header -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface">Categories</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Admin workspace for the category system and rules.</p>
+</div>
+<button class="bg-primary text-on-primary font-label-sm text-label-sm px-4 py-2 rounded-DEFAULT hover:bg-surface-tint transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                Add Category
+            </button>
+</div>
+<!-- Navigation Tabs -->
+<div class="border-b border-outline-variant">
+<nav aria-label="Tabs" class="flex gap-6 overflow-x-auto">
+<a aria-current="page" class="border-b-2 border-primary py-3 px-1 text-on-surface font-label-sm text-label-sm whitespace-nowrap" href="#">Categories</a>
+<a class="border-b-2 border-transparent py-3 px-1 text-on-surface-variant hover:text-on-surface hover:border-outline-variant font-label-sm text-label-sm whitespace-nowrap transition-colors" href="#">Bank Category Mappings</a>
+<a class="border-b-2 border-transparent py-3 px-1 text-on-surface-variant hover:text-on-surface hover:border-outline-variant font-label-sm text-label-sm whitespace-nowrap transition-colors" href="#">Auto-Categorization Rules</a>
+</nav>
+</div>
+<!-- Tab Content: Categories -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-DEFAULT flex flex-col">
+<!-- Table Header -->
+<div class="grid grid-cols-[1fr_120px_120px] px-6 py-3 border-b border-outline-variant bg-surface-container-low font-label-sm text-label-sm text-on-surface-variant uppercase">
+<div>Category Name</div>
+<div class="text-center">Color</div>
+<div class="text-right">Actions</div>
+</div>
+<!-- Category Rows -->
+<div class="flex flex-col">
+<!-- Parent Row -->
+<div class="grid grid-cols-[1fr_120px_120px] px-6 py-3 border-b border-outline-variant hover:bg-surface-container-low transition-colors items-center h-[40px]">
+<div class="flex items-center gap-2 font-data-tabular text-data-tabular text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant cursor-pointer">expand_more</span>
+<span class="font-semibold">Income</span>
+</div>
+<div class="flex justify-center">
+<div class="w-4 h-4 rounded-full bg-secondary-container border border-outline-variant"></div>
+</div>
+<div class="flex justify-end gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-on-surface transition-colors">edit</span>
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-on-surface transition-colors">delete</span>
+</div>
+</div>
+<!-- Child Row -->
+<div class="grid grid-cols-[1fr_120px_120px] pl-12 pr-6 py-3 border-b border-outline-variant hover:bg-surface-container-low transition-colors items-center h-[40px]">
+<div class="flex items-center gap-2 font-data-tabular text-data-tabular text-on-surface-variant">
+<span>Salary</span>
+</div>
+<div class="flex justify-center">
+<div class="w-4 h-4 rounded-full bg-secondary-container border border-outline-variant opacity-70"></div>
+</div>
+<div class="flex justify-end gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-on-surface transition-colors">edit</span>
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-on-surface transition-colors">delete</span>
+</div>
+</div>
+<!-- Parent Row -->
+<div class="grid grid-cols-[1fr_120px_120px] px-6 py-3 border-b border-outline-variant hover:bg-surface-container-low transition-colors items-center h-[40px]">
+<div class="flex items-center gap-2 font-data-tabular text-data-tabular text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant cursor-pointer">chevron_right</span>
+<span class="font-semibold">Housing</span>
+</div>
+<div class="flex justify-center">
+<div class="w-4 h-4 rounded-full bg-tertiary-fixed border border-outline-variant"></div>
+</div>
+<div class="flex justify-end gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-on-surface transition-colors">edit</span>
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-on-surface transition-colors">delete</span>
+</div>
+</div>
+<!-- Parent Row -->
+<div class="grid grid-cols-[1fr_120px_120px] px-6 py-3 border-b border-outline-variant hover:bg-surface-container-low transition-colors items-center h-[40px]">
+<div class="flex items-center gap-2 font-data-tabular text-data-tabular text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant cursor-pointer">expand_more</span>
+<span class="font-semibold">Transportation</span>
+</div>
+<div class="flex justify-center">
+<div class="w-4 h-4 rounded-full bg-primary-fixed-dim border border-outline-variant"></div>
+</div>
+<div class="flex justify-end gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-on-surface transition-colors">edit</span>
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-on-surface transition-colors">delete</span>
+</div>
+</div>
+<!-- Child Row -->
+<div class="grid grid-cols-[1fr_120px_120px] pl-12 pr-6 py-3 border-b border-outline-variant hover:bg-surface-container-low transition-colors items-center h-[40px]">
+<div class="flex items-center gap-2 font-data-tabular text-data-tabular text-on-surface-variant">
+<span>Fuel</span>
+</div>
+<div class="flex justify-center">
+<div class="w-4 h-4 rounded-full bg-primary-fixed-dim border border-outline-variant opacity-70"></div>
+</div>
+<div class="flex justify-end gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-on-surface transition-colors">edit</span>
+<span class="material-symbols-outlined text-[18px] cursor-pointer hover:text-on-surface transition-colors">delete</span>
+</div>
+</div>
+</div>
+<!-- Footer/Pagination placeholder -->
+<div class="px-6 py-3 flex justify-between items-center font-label-sm text-label-sm text-on-surface-variant bg-surface-container-low border-t border-outline-variant">
+<span>Showing 1-10 of 42 categories</span>
+<div class="flex gap-2">
+<button class="px-2 py-1 border border-outline-variant rounded-DEFAULT hover:bg-surface-container-high disabled:opacity-50" disabled="">Prev</button>
+<button class="px-2 py-1 border border-outline-variant rounded-DEFAULT hover:bg-surface-container-high">Next</button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant z-50 flex justify-around items-center h-16 pb-safe">
+<a class="flex flex-col items-center gap-1 text-on-surface-variant p-2 w-16" href="#">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="font-label-sm text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant p-2 w-16" href="#">
+<span class="material-symbols-outlined text-[24px]">receipt_long</span>
+<span class="font-label-sm text-[10px]">Txns</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface font-medium p-2 w-16" href="#">
+<span class="material-symbols-outlined text-[24px] text-primary" style="font-variation-settings: 'FILL' 1;">category</span>
+<span class="font-label-sm text-[10px] text-primary">Cats</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant p-2 w-16" href="#">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="font-label-sm text-[10px]">Settings</span>
+</a>
+</nav>
+</body></html>
