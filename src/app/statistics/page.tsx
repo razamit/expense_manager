@@ -229,7 +229,10 @@ export default function StatisticsPage() {
                   </CardContent>
                 </Card>
 
-                <YearlyCategoryTrendChart trend={vm.selectedYearlyAggregateTrend} />
+                <YearlyCategoryTrendChart
+                  trend={vm.selectedYearlyAggregateTrend}
+                  onMonthSelect={vm.openMonthlyView}
+                />
 
                 <div className="grid gap-6 xl:grid-cols-2">
                   <CategoryAmountBarChart

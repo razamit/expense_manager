@@ -187,6 +187,12 @@ export function useStatisticsViewModel() {
     void fetchYearlyData(year);
   }
 
+  function openMonthlyView(month: number, year: number) {
+    setView("monthly");
+    setSelectedMonth(month);
+    setSelectedMonthYear(year);
+  }
+
   const selectableYearlyCategories = getLeafCategories(categories);
   const selectableYearlyCategoryIds = selectableYearlyCategories.map(
     (category) => category.id
@@ -273,6 +279,7 @@ export function useStatisticsViewModel() {
     selectedMonthYear,
     isMonthlyLoading,
     changeMonth,
+    openMonthlyView,
 
     yearlySpending,
     yearlyIncome,
