@@ -28,19 +28,11 @@ export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-outline-variant bg-sidebar md:flex">
       <div className="border-b border-outline-variant px-6 py-6">
-        <Link href="/" className="flex items-center gap-4">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest text-primary">
-            <CreditCard className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-lg font-black tracking-[-0.02em] text-foreground">
-              FinanceChecker
-            </p>
-            <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-              Institutional Grade
-            </p>
-          </div>
-        </Link>
+        <div className="min-w-0">
+          <p className="text-lg font-black tracking-[-0.02em] text-foreground">
+            FinanceChecker
+          </p>
+        </div>
       </div>
       <ScrollArea className="flex-1 px-3 py-5">
         <nav className="flex flex-col gap-1">

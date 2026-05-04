@@ -34,9 +34,6 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
             <p className="text-base font-black tracking-[-0.02em] text-foreground">
               FinanceChecker
             </p>
-            <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-              Institutional Grade
-            </p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close navigation">
             <X className="h-4 w-4" />
