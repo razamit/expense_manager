@@ -8,6 +8,9 @@ const DEFAULT_MONTHS_BACK = 3;
 const SCRAPE_MONTHS_KEY = "scrape_months_back";
 const DEFAULT_FUTURE_MONTHS = 1;
 const FUTURE_MONTHS_KEY = "scrape_future_months";
+const DEFAULT_GROUP_CONCURRENCY = 4;
+const GROUP_CONCURRENCY_KEY = "scrape_group_concurrency";
+const MAX_GROUP_CONCURRENCY = 10;
 const STALE_MINUTES = 10;
 const RECENT_SECONDS = 30;
 
@@ -42,6 +45,24 @@ export interface ActiveScrapeRunRow {
 }
 
 export class ScrapingManager {
+  private static normalizePositiveInteger(
+    value: string | null | undefined,
+    fallback: number,
+    max: number = Number.MAX_SAFE_INTEGER
+  ): number {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      return fallback;
+    }
+
+    const normalized = Math.trunc(parsed);
+    if (normalized < 1) {
+      return fallback;
+    }
+
+    return Math.min(normalized, max);
+  }
+
   static async createScrapeRun(accountId: string): Promise<string> {
     const run = await prisma.scrapeRun.create({
       data: { accountId },
@@ -61,6 +82,18 @@ export class ScrapingManager {
       where: { key: FUTURE_MONTHS_KEY },
     });
     return setting ? Number(setting.value) : DEFAULT_FUTURE_MONTHS;
+  }
+
+  static async getGroupConcurrency(): Promise<number> {
+    const setting = await prisma.appSetting.findUnique({
+      where: { key: GROUP_CONCURRENCY_KEY },
+    });
+
+    return this.normalizePositiveInteger(
+      setting?.value,
+      DEFAULT_GROUP_CONCURRENCY,
+      MAX_GROUP_CONCURRENCY
+    );
   }
 
   static async executeScrape(

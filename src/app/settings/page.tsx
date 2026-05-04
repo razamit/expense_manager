@@ -21,6 +21,8 @@ export default function SettingsPage() {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [scrapeMonths, setScrapeMonths] = useState("3");
   const [scrapeMonthsSaved, setScrapeMonthsSaved] = useState(false);
+  const [scrapeGroupConcurrency, setScrapeGroupConcurrency] = useState("4");
+  const [scrapeGroupConcurrencySaved, setScrapeGroupConcurrencySaved] = useState(false);
 
   useEffect(() => {
     fetch("/api/config")
@@ -28,6 +30,10 @@ export default function SettingsPage() {
       .then((config) => {
         if (config.scrape_months_back) {
           setScrapeMonths(config.scrape_months_back);
+        }
+
+        if (config.scrape_group_concurrency) {
+          setScrapeGroupConcurrency(config.scrape_group_concurrency);
         }
       });
   }, []);
@@ -81,6 +87,18 @@ export default function SettingsPage() {
     setTimeout(() => setScrapeMonthsSaved(false), 2000);
   }
 
+  async function handleSaveScrapeGroupConcurrency(value: string) {
+    setScrapeGroupConcurrency(value);
+    setScrapeGroupConcurrencySaved(false);
+    await fetch("/api/config", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "scrape_group_concurrency", value }),
+    });
+    setScrapeGroupConcurrencySaved(true);
+    setTimeout(() => setScrapeGroupConcurrencySaved(false), 2000);
+  }
+
   async function handleRecategorize() {
     const response = await fetch("/api/category-rules", { method: "POST" });
     if (response.ok) {
@@ -125,6 +143,34 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">
               How far back to fetch transactions when scraping. Longer ranges take more time.
               {scrapeMonthsSaved && (
+                <span className="ml-2 text-positive">Saved!</span>
+              )}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Parallel Credential Groups</Label>
+            <Select
+              value={scrapeGroupConcurrency}
+              onValueChange={handleSaveScrapeGroupConcurrency}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 group</SelectItem>
+                <SelectItem value="2">2 groups</SelectItem>
+                <SelectItem value="3">3 groups</SelectItem>
+                <SelectItem value="4">4 groups (default)</SelectItem>
+                <SelectItem value="5">5 groups</SelectItem>
+                <SelectItem value="6">6 groups</SelectItem>
+                <SelectItem value="8">8 groups</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              How many independent shared-login groups can scrape at the same time.
+              Higher values reduce total sync time but increase browser and bank load.
+              {scrapeGroupConcurrencySaved && (
                 <span className="ml-2 text-positive">Saved!</span>
               )}
             </p>

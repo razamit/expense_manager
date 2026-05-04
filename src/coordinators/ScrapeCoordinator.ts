@@ -28,14 +28,18 @@ export class ScrapeCoordinator {
   ): Promise<ScrapeProgress[]> {
     const accounts = await AccountRepository.findActive();
     const groups = await this.groupAccountsByCredentialOwner(accounts);
-    const results: ScrapeProgress[] = [];
-
-    for (const group of groups) {
-      const groupResults = await this.scrapeAccountGroup(group, onProgress);
-      results.push(...groupResults);
+    if (groups.length === 0) {
+      return [];
     }
 
-    return results;
+    const concurrency = await ScrapingManager.getGroupConcurrency();
+    const groupResults = await this.mapWithConcurrency(
+      groups,
+      concurrency,
+      (group) => this.scrapeAccountGroup(group, onProgress)
+    );
+
+    return groupResults.flat();
   }
 
   static async scrapeSingleAccount(
@@ -295,6 +299,33 @@ export class ScrapeCoordinator {
     );
 
     return new Map(runIds);
+  }
+
+  private static async mapWithConcurrency<TItem, TResult>(
+    items: TItem[],
+    concurrency: number,
+    worker: (item: TItem) => Promise<TResult>
+  ): Promise<TResult[]> {
+    const results = new Array<TResult>(items.length);
+    let nextIndex = 0;
+    const workerCount = Math.min(items.length, Math.max(1, concurrency));
+
+    await Promise.all(
+      Array.from({ length: workerCount }, async () => {
+        while (true) {
+          const currentIndex = nextIndex;
+          nextIndex += 1;
+
+          if (currentIndex >= items.length) {
+            return;
+          }
+
+          results[currentIndex] = await worker(items[currentIndex]);
+        }
+      })
+    );
+
+    return results;
   }
 
   private static buildMatchPlan(

@@ -54,8 +54,40 @@ function dispatchAccountsRefresh() {
   }
 }
 
-function getFirstBindingResult(rows: ScrapeProgress[]) {
-  return rows.find((r) => r.status === "binding-needed") ?? null;
+function getVisibleRunIds(rows: ScrapeProgress[]) {
+  return new Set(
+    rows
+      .map((row) => row.runId)
+      .filter((runId): runId is string => Boolean(runId))
+  );
+}
+
+function pruneDismissedBindingRunIds(
+  rows: ScrapeProgress[],
+  dismissedRunIds: Set<string>
+) {
+  const visibleRunIds = getVisibleRunIds(rows);
+
+  for (const runId of dismissedRunIds) {
+    if (!visibleRunIds.has(runId)) {
+      dismissedRunIds.delete(runId);
+    }
+  }
+}
+
+function getNextBindingResult(
+  rows: ScrapeProgress[],
+  dismissedRunIds: Set<string>
+) {
+  pruneDismissedBindingRunIds(rows, dismissedRunIds);
+
+  return (
+    rows.find(
+      (row) =>
+        row.status === "binding-needed" &&
+        (!row.runId || !dismissedRunIds.has(row.runId))
+    ) ?? null
+  );
 }
 
 export function ScrapeProvider({ children }: { children: ReactNode }) {
@@ -69,6 +101,7 @@ export function ScrapeProvider({ children }: { children: ReactNode }) {
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const emptyActiveTicksRef = useRef(0);
   const prevActiveCountRef = useRef(0);
+  const dismissedBindingRunIdsRef = useRef<Set<string>>(new Set());
 
   const stopPolling = useCallback(() => {
     if (pollTimerRef.current !== null) {
@@ -102,12 +135,16 @@ export function ScrapeProvider({ children }: { children: ReactNode }) {
       }
 
       const allRows = [...active, ...recent];
+      const pendingBinding = getNextBindingResult(
+        allRows,
+        dismissedBindingRunIdsRef.current
+      );
 
       setState((prev) => ({
         ...prev,
         isScraping: active.length > 0,
         scrapeProgress: allRows,
-        pendingBinding: getFirstBindingResult(allRows) ?? prev.pendingBinding,
+        pendingBinding,
       }));
 
       if (nowEmpty && emptyActiveTicksRef.current >= STOP_POLL_AFTER_EMPTY_TICKS) {
@@ -133,18 +170,27 @@ export function ScrapeProvider({ children }: { children: ReactNode }) {
         if (!response.ok || !mounted) return;
         const data = await readJson<{ active: ScrapeProgress[]; recent: ScrapeProgress[] }>(response);
         if (data.active.length > 0) {
+          const allRows = [...data.active, ...data.recent];
           prevActiveCountRef.current = data.active.length;
           setState((prev) => ({
             ...prev,
             isScraping: true,
-            scrapeProgress: [...data.active, ...data.recent],
-            pendingBinding: getFirstBindingResult([...data.active, ...data.recent]) ?? prev.pendingBinding,
+            scrapeProgress: allRows,
+            pendingBinding: getNextBindingResult(
+              allRows,
+              dismissedBindingRunIdsRef.current
+            ),
           }));
           startPolling();
         } else if (data.recent.length > 0) {
+          const allRows = data.recent;
           setState((prev) => ({
             ...prev,
-            scrapeProgress: data.recent,
+            scrapeProgress: allRows,
+            pendingBinding: getNextBindingResult(
+              allRows,
+              dismissedBindingRunIdsRef.current
+            ),
           }));
         }
       } catch { /* ignore */ }
@@ -184,9 +230,8 @@ export function ScrapeProvider({ children }: { children: ReactNode }) {
           throw new Error("Failed to start scrape");
         }
 
-        // Optimistically mark as scraping; polling will fill in rows.
-        setState((prev) => ({ ...prev, isScraping: true, scrapeProgress: [] }));
-        prevActiveCountRef.current = 1;
+        setState((prev) => ({ ...prev, isScraping: true }));
+        prevActiveCountRef.current = Math.max(prevActiveCountRef.current, 1);
         startPolling();
       } catch (error) {
         setState((prev) => ({
@@ -211,7 +256,6 @@ export function ScrapeProvider({ children }: { children: ReactNode }) {
 
   const bindAccountNumber = useCallback(
     async (accountId: string, accountNumber: string) => {
-      setState((prev) => ({ ...prev, pendingBinding: null }));
       const response = await fetch("/api/accounts", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -225,11 +269,30 @@ export function ScrapeProvider({ children }: { children: ReactNode }) {
   );
 
   const clearPendingBinding = useCallback(() => {
-    setState((prev) => ({ ...prev, pendingBinding: null }));
+    setState((prev) => {
+      const currentRunId = prev.pendingBinding?.runId;
+      if (currentRunId) {
+        dismissedBindingRunIdsRef.current.add(currentRunId);
+      }
+
+      return {
+        ...prev,
+        pendingBinding: getNextBindingResult(
+          prev.scrapeProgress,
+          dismissedBindingRunIdsRef.current
+        ),
+      };
+    });
   }, []);
 
   const clearProgress = useCallback(() => {
-    setState((prev) => ({ ...prev, scrapeProgress: [], scrapeError: null }));
+    dismissedBindingRunIdsRef.current.clear();
+    setState((prev) => ({
+      ...prev,
+      scrapeProgress: [],
+      pendingBinding: null,
+      scrapeError: null,
+    }));
   }, []);
 
   const value = useMemo<ScrapeContextValue>(
