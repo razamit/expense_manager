@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { MasterPasswordDialog } from "@/components/shared/MasterPasswordDialog";
+import { ScrapeProvider } from "@/context/ScrapeContext";
+import { ScrapeToast } from "@/components/scraping/ScrapeToast";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -13,7 +15,6 @@ export function AppShell({ children }: AppShellProps) {
   const [isLocked, setIsLocked] = useState(true);
   const [isFirstTime, setIsFirstTime] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [isScraping, setIsScraping] = useState(false);
 
   useEffect(() => {
     checkAuthStatus();
@@ -59,15 +60,6 @@ export function AppShell({ children }: AppShellProps) {
     return false;
   }
 
-  const handleScrapeClick = useCallback(async () => {
-    setIsScraping(true);
-    try {
-      await fetch("/api/scrape", { method: "POST" });
-    } finally {
-      setIsScraping(false);
-    }
-  }, []);
-
   function handleLockClick() {
     fetch("/api/auth/unlock", {
       method: "POST",
@@ -91,7 +83,7 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   return (
-    <>
+    <ScrapeProvider>
       <MasterPasswordDialog
         open={isLocked}
         isFirstTime={isFirstTime}
@@ -100,16 +92,13 @@ export function AppShell({ children }: AppShellProps) {
       <div className="min-h-screen bg-surface-container-low md:pl-72">
         <Sidebar />
         <div className="flex min-h-screen flex-col">
-          <TopBar
-            onScrapeClick={handleScrapeClick}
-            onLockClick={handleLockClick}
-            isScraping={isScraping}
-          />
+          <TopBar onLockClick={handleLockClick} />
           <main className="min-w-0 flex-1 bg-surface-container-low">
             {children}
           </main>
         </div>
       </div>
-    </>
+      <ScrapeToast />
+    </ScrapeProvider>
   );
 }

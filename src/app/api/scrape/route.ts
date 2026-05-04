@@ -1,35 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ScrapeCoordinator } from "@/coordinators/ScrapeCoordinator";
+import { ScrapingManager } from "@/managers/ScrapingManager";
+import { AccountRepository } from "@/repositories/AccountRepository";
 import { ConfigEncryptionManager } from "@/managers/ConfigEncryptionManager";
+import type { ScrapeProgress } from "@/types";
+
+// This route assumes a long-running Node server (next dev / next start).
+// The coordinator runs fire-and-forget after the response is sent.
 
 export async function POST(request: NextRequest) {
-  console.log("[Scrape API] POST received, isUnlocked:", ConfigEncryptionManager.isUnlocked());
-
   if (!ConfigEncryptionManager.isUnlocked()) {
-    console.log("[Scrape API] Rejected: app is locked");
     return NextResponse.json({ error: "App is locked" }, { status: 401 });
   }
 
   const body = await request.json().catch(() => ({}));
   const accountId = body.accountId as string | undefined;
-  console.log("[Scrape API] accountId:", accountId ?? "all");
 
-  try {
-    if (accountId) {
-      console.log("[Scrape API] Starting single account scrape:", accountId);
-      const result = await ScrapeCoordinator.scrapeSingleAccount(accountId);
-      console.log("[Scrape API] Scrape result:", JSON.stringify(result));
-      return NextResponse.json(result);
-    }
-
-    console.log("[Scrape API] Starting scrape for all accounts");
-    const results = await ScrapeCoordinator.scrapeAllAccounts();
-    console.log("[Scrape API] All accounts result:", JSON.stringify(results));
-    return NextResponse.json({ results });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Scrape failed";
-    console.error("[Scrape API] Error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+  // Determine target accounts for the concurrency guard.
+  let targetAccountIds: string[];
+  if (accountId) {
+    targetAccountIds = [accountId];
+  } else {
+    const accounts = await AccountRepository.findActive();
+    targetAccountIds = accounts.map((a) => a.id);
   }
+
+  const activeRuns = await ScrapingManager.findActiveRunsForAccountIds(targetAccountIds);
+  if (activeRuns.length > 0) {
+    return NextResponse.json(
+      { error: "Scrape already in progress for one or more of these accounts" },
+      { status: 409 }
+    );
+  }
+
+  function onProgress(progress: ScrapeProgress) {
+    if (!progress.runId) return;
+    ScrapingManager.updateScrapeProgress(progress.runId, progress).catch(
+      (err) => console.error("[scrape progress write]", err)
+    );
+  }
+
+  // Fire-and-forget — response is sent before coordinator finishes.
+  if (accountId) {
+    void ScrapeCoordinator.scrapeSingleAccount(accountId, onProgress).catch(
+      (err) => console.error("[scrape bg single]", err)
+    );
+  } else {
+    void ScrapeCoordinator.scrapeAllAccounts(onProgress).catch(
+      (err) => console.error("[scrape bg all]", err)
+    );
+  }
+
+  return NextResponse.json({ ok: true });
 }

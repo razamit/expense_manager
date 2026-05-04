@@ -4,15 +4,15 @@ import { useState } from "react";
 import { Menu, Lock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileSidebar } from "./MobileSidebar";
+import { useScrape } from "@/context/ScrapeContext";
 
 interface TopBarProps {
-  onScrapeClick: () => void;
   onLockClick: () => void;
-  isScraping: boolean;
 }
 
-export function TopBar({ onScrapeClick, onLockClick, isScraping }: TopBarProps) {
+export function TopBar({ onLockClick }: TopBarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isScraping, scrapeAllAccounts } = useScrape();
 
   return (
     <>
@@ -55,7 +55,7 @@ export function TopBar({ onScrapeClick, onLockClick, isScraping }: TopBarProps) 
 
             <Button
               size="sm"
-              onClick={onScrapeClick}
+              onClick={scrapeAllAccounts}
               disabled={isScraping}
             >
               <RefreshCw className={`h-4 w-4 ${isScraping ? "animate-spin" : ""}`} />

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { X, LayoutDashboard, CreditCard, ArrowLeftRight, Tag, BarChart3, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useScrape } from "@/context/ScrapeContext";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -22,6 +23,7 @@ interface MobileSidebarProps {
 
 export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
   const pathname = usePathname();
+  const { isScraping } = useScrape();
 
   if (!open) return null;
 
@@ -56,7 +58,13 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
                 )}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {item.href === "/accounts" && isScraping && (
+                  <span
+                    className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-warning"
+                    aria-label="Scraping in progress"
+                  />
+                )}
               </Link>
             );
           })}

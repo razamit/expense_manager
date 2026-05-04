@@ -168,6 +168,13 @@ export class ScrapeCoordinator {
 
     const runIds = await this.createRunIdMap(group.accounts);
 
+    // Re-emit with runId so onProgress writer can persist to DB.
+    for (const account of group.accounts) {
+      const runId = runIds.get(account.id);
+      const p = this.createProgress(account, group, { status: "scraping", message: "Starting scrape..." }, runId);
+      onProgress?.(p);
+    }
+
     try {
       const scrapeResult = await ScrapingManager.executeScrape(
         group.credentialOwner.companyType,
@@ -265,7 +272,8 @@ export class ScrapeCoordinator {
   private static createProgress(
     account: Account,
     group: ScrapeAccountGroup,
-    overrides: Partial<ScrapeProgress>
+    overrides: Partial<ScrapeProgress>,
+    runId?: string
   ): ScrapeProgress {
     return {
       accountId: account.id,
@@ -273,6 +281,7 @@ export class ScrapeCoordinator {
       credentialOwnerAccountId: group.credentialOwnerId,
       credentialOwnerName: group.credentialOwner?.displayName,
       status: "pending",
+      runId,
       ...overrides,
     };
   }
@@ -371,7 +380,7 @@ export class ScrapeCoordinator {
       status: "importing",
       message: autoBound ? "Binding account and importing..." : "Importing transactions...",
       matchedAccountNumber: scrapeAccount.accountNumber,
-    });
+    }, runId);
     onProgress?.(importingProgress);
 
     await this.updateAccountFromScrape(account, scrapeAccount);
@@ -399,7 +408,7 @@ export class ScrapeCoordinator {
       txnCount: importResult.totalProcessed,
       newTxnCount: importResult.newTransactions,
       matchedAccountNumber: scrapeAccount.accountNumber,
-    });
+    }, runId);
     onProgress?.(completedProgress);
     return completedProgress;
   }
@@ -425,7 +434,7 @@ export class ScrapeCoordinator {
       status: "binding-needed",
       message: "Select the matching card before importing transactions.",
       availableBindings,
-    });
+    }, runId);
     onProgress?.(progress);
     return progress;
   }
@@ -450,7 +459,7 @@ export class ScrapeCoordinator {
       message: "No matching scraped account found",
       txnCount: 0,
       newTxnCount: 0,
-    });
+    }, runId);
     onProgress?.(progress);
     return progress;
   }
@@ -477,7 +486,7 @@ export class ScrapeCoordinator {
     const progress = this.createProgress(account, group, {
       status: "error",
       message: errorMessage,
-    });
+    }, runId);
     onProgress?.(progress);
     return progress;
   }
@@ -511,7 +520,8 @@ export class ScrapeCoordinator {
         {
           status: "error",
           message: errorMessage,
-        }
+        },
+        runId
       );
 
       results.push(errorProgress);

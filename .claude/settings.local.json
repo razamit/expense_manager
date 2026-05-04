@@ -19,7 +19,9 @@
       "Bash(cd /d/Projects/FinanceChecker && npx prisma generate 2>&1)",
       "Bash(grep:*)",
       "Bash(grep scraper-adapter:*)",
-      "Bash(cd /d/Projects/FinanceChecker && npx patch-package israeli-bank-scrapers 2>&1)"
+      "Bash(cd /d/Projects/FinanceChecker && npx patch-package israeli-bank-scrapers 2>&1)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Stop-Process *)"
     ]
   }
 }

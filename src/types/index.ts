@@ -216,6 +216,7 @@ export interface ScrapeProgress {
     | "done"
     | "error"
     | "binding-needed";
+  runId?: string;
   message?: string;
   txnCount?: number;
   newTxnCount?: number;

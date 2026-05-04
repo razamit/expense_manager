@@ -112,13 +112,18 @@ model ScrapeRun {
   accountId    String
   startedAt    DateTime      @default(now())
   completedAt  DateTime?
+  updatedAt    DateTime      @updatedAt
   status       String        @default("running")
   errorType    String?
   errorMessage String?
   txnCount     Int           @default(0)
   newTxnCount  Int           @default(0)
+  progressJson String?
   account      Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
   transactions Transaction[]
+
+  @@index([status, completedAt])
+  @@index([status, updatedAt])
 }
 
 model Budget {

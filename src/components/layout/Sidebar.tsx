@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useScrape } from "@/context/ScrapeContext";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { isScraping } = useScrape();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-outline-variant bg-sidebar md:flex">
@@ -54,7 +56,13 @@ export function Sidebar() {
                 )}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {item.href === "/accounts" && isScraping && (
+                  <span
+                    className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-warning"
+                    aria-label="Scraping in progress"
+                  />
+                )}
               </Link>
             );
           })}
