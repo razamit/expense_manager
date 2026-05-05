@@ -1,13 +1,31 @@
 {
   "name": "finance-checker",
   "version": "1.0.0",
+  "description": "Local-first personal finance app for Israeli bank accounts — scrapes, stores, categorizes, and visualizes your transactions.",
+  "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/razamit/expense_manager.git"
+  },
+  "homepage": "https://github.com/razamit/expense_manager#readme",
+  "bugs": {
+    "url": "https://github.com/razamit/expense_manager/issues"
+  },
+  "engines": {
+    "node": ">=18",
+    "npm": ">=9"
+  },
   "scripts": {
     "dev": "next dev --port 5000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "setup": "node scripts/setup.cjs",
+    "setup:no-start": "node scripts/setup.cjs --no-start",
     "db:generate": "prisma generate",
+    "db:deploy": "prisma migrate deploy",
+    "db:setup": "npm run db:deploy && npm run db:seed",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset",

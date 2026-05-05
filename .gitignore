@@ -40,3 +40,9 @@ config/credentials.enc
 # IDE
 .vscode/
 .idea/
+
+# Claude Code session data
+.claude/
+
+# Local design references
+stich_design_reference/

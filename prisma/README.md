@@ -37,13 +37,19 @@ prisma/
 | Command | Purpose |
 |---------|---------|
 | `npm run db:generate` | Regenerate Prisma Client |
-| `npm run db:migrate` | Apply migrations |
+| `npm run db:deploy` | Apply checked-in migrations non-interactively |
+| `npm run db:setup` | Apply checked-in migrations and seed data |
+| `npm run db:migrate` | Create and apply development migrations interactively |
 | `npm run db:seed` | Run seed script |
 | `npm run db:reset` | Reset DB and re-seed |
 
 ## Migrations
 
-Migrations are applied with `npx prisma migrate dev`. The DB file is at `prisma/dev.db` by default (or per `DATABASE_URL`).
+For automated setup and fresh clones, use `npm run db:deploy` or `npm run db:setup` so Prisma applies the checked-in migrations without prompting.
+
+Use `npm run db:migrate` only when you are actively developing schema changes and need Prisma to create a new migration.
+
+The DB file is at `prisma/dev.db` by default (or per `DATABASE_URL`).
 
 ## Seeding
 
@@ -57,3 +63,5 @@ Run after migrations or reset:
 ```bash
 npm run db:seed
 ```
+
+`seed.ts` uses upserts for the default categories and rules, so rerunning setup does not duplicate those records.

@@ -1,70 +1,300 @@
 # FinanceChecker
 
-Personal finance application that scrapes Israeli banks and credit cards, categorizes transactions, and provides spending insights, statistics, and anomaly detection.
+[![CI](https://github.com/razamit/expense_manager/actions/workflows/ci.yml/badge.svg)](https://github.com/razamit/expense_manager/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-brightgreen)](https://nodejs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 
-## Prerequisites
+FinanceChecker is a Next.js personal finance app for pulling transactions from Israeli bank and credit-card accounts, storing them locally, auto-categorizing activity, and surfacing the results in dashboards, statistics, and anomaly views.
 
-- **Node.js** 18+ (LTS recommended)
-- **npm** 9+
-- **SQLite** (via Prisma, no separate install needed)
+The default setup is local-first:
 
-## Setup
+- the web app runs with Next.js
+- the database is SQLite through Prisma
+- saved scraping credentials are encrypted on disk
+- default categories and rules are seeded automatically
 
-1. **Clone and install:**
+## What The App Does
 
-   ```bash
-   cd FinanceChecker
-   npm install
-   ```
+FinanceChecker is built around six core workflows:
 
-2. **Environment:**
+- **Dashboard**: overview of balances, recent activity, category totals, and unusual transactions
+- **Accounts**: manage bank and card accounts and monitor scrape status
+- **Transactions**: inspect, filter, exclude, and recategorize imported transactions
+- **Categories**: maintain category trees and auto-categorization rules
+- **Statistics**: analyze spending patterns and category breakdowns with charts
+- **Settings**: configure the master password and encrypted credential storage
 
-   Copy `.env.example` to `.env` and set `DATABASE_URL`:
+Under the hood, scraping is handled through `israeli-bank-scrapers` with Puppeteer-based browser automation, while Prisma persists normalized account and transaction data into a local database.
 
-   ```bash
-   cp .env.example .env
-   ```
+## Main Features
 
-   For local SQLite:
+- Automatic scraping for supported Israeli financial institutions
+- Local SQLite storage with checked-in Prisma migrations
+- Seeded category catalog and merchant-matching rules
+- Manual and rule-based transaction categorization
+- Dashboard summaries and statistics pages
+- Anomaly detection for suspicious or unusual activity
+- Encrypted credential storage protected by a master password
+- Patch support for scraper-library fixes via `patch-package`
 
-   ```
-   DATABASE_URL="file:./prisma/dev.db"
-   ```
+## Tech Stack
 
-3. **Database:**
+| Layer | Technology |
+| --- | --- |
+| Framework | Next.js 16 App Router |
+| UI | React 19 |
+| Language | TypeScript 5.9 |
+| Styling | Tailwind CSS 4 |
+| Components | Radix UI primitives |
+| Database | SQLite |
+| ORM | Prisma 6 |
+| Charts | Recharts |
+| Scraping | `israeli-bank-scrapers`, `puppeteer-extra`, stealth plugin |
 
-   ```bash
-   npm run db:migrate
-   npm run db:seed
-   ```
+## Architecture
 
-4. **Run:**
+The app follows a layered structure so UI state, business logic, and data access stay separate:
 
-   ```bash
-   npm run dev
-   ```
+| Layer | Responsibility | Location |
+| --- | --- | --- |
+| ViewModel | Page state and API interaction | `src/viewmodels/` |
+| Coordinator | Workflow orchestration | `src/coordinators/` |
+| Manager | Business logic | `src/managers/` |
+| Repository | Database access | `src/repositories/` |
 
-   App runs at [http://localhost:5000](http://localhost:5000).
+Runtime flow:
 
-## Scripts
+```text
+UI pages -> ViewModels -> API routes -> Managers -> Repositories -> Prisma -> SQLite
+```
 
-| Script | Purpose |
-|--------|---------|
-| `npm run dev` | Next.js dev server (port 5000) |
-| `npm run build` | Production build |
-| `npm run start` | Production server |
+If you want the deeper breakdown, start with:
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md)
+- [src/README.md](./src/README.md)
+- [prisma/README.md](./prisma/README.md)
+- [patches/README.md](./patches/README.md)
+
+## Project Layout
+
+| Path | Purpose |
+| --- | --- |
+| `src/app/` | App Router pages and API routes |
+| `src/components/` | Reusable UI and feature components |
+| `src/viewmodels/` | Page-specific state and data-loading hooks |
+| `src/coordinators/` | Multi-step flows such as scraping and transaction import |
+| `src/managers/` | Domain logic for transactions, categories, statistics, scraping, and config |
+| `src/repositories/` | Prisma-backed data access |
+| `src/lib/` | Shared utilities, encryption, Prisma client, scraper adapter |
+| `prisma/` | Schema, migrations, and seed script |
+| `config/` | Encrypted runtime configuration and credentials |
+| `patches/` | `patch-package` fixes applied after install |
+| `stich_design_reference/` | Design references and UI exploration assets |
+
+## Requirements
+
+You need the following to run the project locally:
+
+- Node.js 18 or newer
+- npm 9 or newer
+- Windows, macOS, or Linux
+
+You do **not** need a separate database server for local development. The default configuration uses SQLite at `prisma/dev.db`.
+
+## Quick Start
+
+The repository includes platform setup scripts that handle the full bootstrap flow:
+
+1. verify Node.js and npm, and try to install them if missing
+2. copy `.env.example` to `.env` when needed
+3. install dependencies with `npm ci`
+4. apply Prisma migrations
+5. seed the local database
+6. optionally start the Next.js dev server on port `5000`
+
+### Windows
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+Optional flags:
+
+- `-NoStart` prepares the repo without launching the dev server
+- `-SkipNodeInstall` fails instead of trying `winget` or `choco`
+- `-SkipInstall` skips `npm ci` and reuses the current `node_modules`
+- `-ForceEnv` recreates `.env` from `.env.example`
+
+### macOS / Linux
+
+```bash
+bash ./setup.sh
+```
+
+Optional flags:
+
+- `--no-start` prepares the repo without launching the dev server
+- `--skip-node-install` fails instead of trying the system package manager
+- `--skip-install` skips `npm ci` and reuses the current `node_modules`
+- `--force-env` recreates `.env` from `.env.example`
+
+When setup completes, open [http://localhost:5000](http://localhost:5000).
+
+On a fresh install, the first screen should be the master-password setup flow.
+
+## Manual Installation
+
+If you want a fully manual install, use the steps below.
+
+### 1. Clone And Install Dependencies
+
+```bash
+git clone https://github.com/razamit/expense_manager.git
+cd FinanceChecker
+npm ci
+```
+
+### 2. Create The Environment File
+
+The project ships with a single required variable for local development.
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+macOS / Linux:
+
+```bash
+cp .env.example .env
+```
+
+Default value:
+
+```env
+DATABASE_URL="file:./prisma/dev.db"
+```
+
+### 3. Prepare The Database
+
+```bash
+npm run db:setup
+```
+
+This applies all checked-in Prisma migrations and seeds the default categories and merchant rules.
+
+### 4. Start The Development Server
+
+```bash
+npm run dev
+```
+
+The app is available at [http://localhost:5000](http://localhost:5000).
+
+### 5. First-Run Flow
+
+After the app opens:
+
+1. create the master password
+2. add or unlock encrypted scraping credentials
+3. add accounts and run a scrape
+4. review imported transactions
+5. adjust categories and rules as needed
+6. use the dashboard and statistics pages for ongoing analysis
+
+## Production Build
+
+To create and run a production build locally:
+
+```bash
+npm run build
+npm run start
+```
+
+## Environment And Data Files
+
+### `.env`
+
+Created from `.env.example` during setup. For local development it only needs:
+
+```env
+DATABASE_URL="file:./prisma/dev.db"
+```
+
+### `prisma/dev.db`
+
+The default SQLite database file used by Prisma.
+
+### `config/credentials.enc`
+
+Encrypted storage for scraped-account credentials. Treat this as sensitive local data even though it is encrypted.
+
+## Available Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Next.js dev server on port `5000` |
+| `npm run build` | Build the production bundle |
+| `npm run start` | Run the production server |
 | `npm run lint` | Run ESLint |
-| `npm run db:generate` | Prisma generate |
-| `npm run db:migrate` | Run migrations |
-| `npm run db:seed` | Seed categories |
-| `npm run db:reset` | Reset DB (migrate + seed) |
+| `npm run setup` | Run the shared setup flow and start the dev server |
+| `npm run setup:no-start` | Run setup without starting the dev server |
+| `npm run db:generate` | Regenerate Prisma Client |
+| `npm run db:deploy` | Apply checked-in migrations non-interactively |
+| `npm run db:setup` | Apply migrations and seed default data |
+| `npm run db:migrate` | Create and apply a new development migration |
+| `npm run db:seed` | Run the seed script only |
+| `npm run db:reset` | Reset the database using Prisma |
 
-## Project Structure
+## Security Notes
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for architecture, data flow, and technology stack.
+- The app uses a master password before exposing saved credentials.
+- Scraping credentials are stored in encrypted form, not plain text.
+- `.env` should remain local to your machine.
+- If you publish this repository, do not commit real credentials, live databases, or personal financial data.
 
-Folder-specific docs:
+## Troubleshooting
 
-- [src/README.md](./src/README.md) – Application structure
-- [prisma/README.md](./prisma/README.md) – Schema, migrations, seeding
-- [patches/README.md](./patches/README.md) – Package patches
+### Node.js Is Missing
+
+Use the platform setup scripts first. They try to install Node automatically when possible.
+
+### The App Does Not Start After Setup
+
+Run the no-start setup flow and then start the server manually:
+
+```bash
+npm run setup:no-start
+npm run dev
+```
+
+### I Want A Clean Local Database
+
+```bash
+npm run db:reset
+```
+
+### Scraping Breaks After A Bank Login Flow Changes
+
+This project depends on scraper integrations that can change when providers update their websites. Check the `patches/` folder and the upstream `israeli-bank-scrapers` package when scraping behavior regresses.
+
+## Additional Documentation
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) for system design and data flow
+- [src/README.md](./src/README.md) for application structure
+- [prisma/README.md](./prisma/README.md) for schema, migrations, and seeding
+- [patches/README.md](./patches/README.md) for scraper-library patches
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on opening issues and pull requests.
+
+## Security
+
+For vulnerability reports, read [SECURITY.md](./SECURITY.md). Do not open public issues for security problems.
+
+## License
+
+[MIT](./LICENSE)
