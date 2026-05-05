@@ -90,7 +90,7 @@ If you want the deeper breakdown, start with:
 | `prisma/` | Schema, migrations, and seed script |
 | `config/` | Encrypted runtime configuration and credentials |
 | `patches/` | `patch-package` fixes applied after install |
-| `stich_design_reference/` | Design references and UI exploration assets |
+| `docs/` | Supporting documentation and optional local-only design references |
 
 ## Requirements
 
@@ -174,8 +174,10 @@ cp .env.example .env
 Default value:
 
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="file:./dev.db"
 ```
+
+Prisma resolves SQLite file URLs relative to `prisma/schema.prisma`, so this value points to `prisma/dev.db` on disk.
 
 ### 3. Prepare The Database
 
@@ -220,8 +222,10 @@ npm run start
 Created from `.env.example` during setup. For local development it only needs:
 
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="file:./dev.db"
 ```
+
+That value maps to the `prisma/dev.db` SQLite file on disk.
 
 ### `prisma/dev.db`
 

@@ -31,6 +31,8 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma
+/dev.db
+/dev.db-journal
 prisma/dev.db
 prisma/dev.db-journal
 
@@ -44,5 +46,3 @@ config/credentials.enc
 # Claude Code session data
 .claude/
 
-# Local design references
-stich_design_reference/

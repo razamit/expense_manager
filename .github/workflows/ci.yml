@@ -29,7 +29,7 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
         env:
-          DATABASE_URL: "file:./prisma/dev.db"
+          DATABASE_URL: "file:./dev.db"
 
       - name: Lint
         run: npm run lint
@@ -40,4 +40,4 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          DATABASE_URL: "file:./prisma/dev.db"
+          DATABASE_URL: "file:./dev.db"
