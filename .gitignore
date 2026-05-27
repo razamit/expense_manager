@@ -22,6 +22,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# scrape logs
+/logs
+
 # env
 .env*.local
 .env
@@ -35,6 +38,8 @@ next-env.d.ts
 /dev.db-journal
 prisma/dev.db
 prisma/dev.db-journal
+prisma/*.db
+prisma/*.db-journal
 
 # encrypted credentials
 config/credentials.enc
@@ -43,6 +48,8 @@ config/credentials.enc
 .vscode/
 .idea/
 
-# Claude Code session data
-.claude/
+# Claude Code: keep shared agent skills + docs, ignore local/session state
+.claude/*
+!.claude/README.md
+!.claude/skills/
 

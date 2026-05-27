@@ -6,6 +6,7 @@ NO_START=0
 SKIP_NODE_INSTALL=0
 SKIP_INSTALL=0
 FORCE_ENV=0
+LAUNCH=0
 
 print_info() {
   printf '[setup] %s\n' "$1"
@@ -18,6 +19,7 @@ FinanceChecker setup
 Usage: bash ./setup.sh [options]
 
 Options:
+  --launch             Build and run the production server on port 5000, then open the browser
   --no-start           Prepare the repo and database without starting the dev server
   --skip-node-install  Do not try to install Node.js/npm when missing
   --skip-install       Skip npm ci and reuse the current node_modules
@@ -29,6 +31,9 @@ EOF
 parse_args() {
   while (($# > 0)); do
     case "$1" in
+      --launch)
+        LAUNCH=1
+        ;;
       --no-start)
         NO_START=1
         ;;
@@ -149,6 +154,18 @@ main() {
 
   parse_args "$@"
   install_node_if_needed
+
+  if [[ "$LAUNCH" -eq 1 ]]; then
+    local launch_args=("scripts/launch.cjs")
+
+    if [[ "$FORCE_ENV" -eq 1 ]]; then
+      launch_args+=("--force-env")
+    fi
+
+    print_info "Running production launch flow from $repo_root"
+    node "${launch_args[@]}"
+    return
+  fi
 
   local node_args=("scripts/setup.cjs")
 

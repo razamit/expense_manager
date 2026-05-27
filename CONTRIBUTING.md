@@ -37,6 +37,19 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) before making structural changes. New fe
 | Workflow orchestration | `src/coordinators/` |
 | Database access | `src/repositories/` |
 
+## Claude Code Skills
+
+If you use [Claude Code](https://docs.claude.com/en/docs/claude-code), the repo ships project-specific agent skills under [`.claude/skills/`](.claude/skills/README.md):
+
+| Skill | Purpose |
+| --- | --- |
+| `diagnose-scrape` | Explain why a scrape/sync failed from the run log and `ScrapeRun` table. |
+| `scaffold-slice` | Generate a feature across the ViewModel/API/Manager/Repository layers. |
+| `db-migrate` | Run a safe Prisma migration (handles the dev-server engine lock). |
+| `new-page` | Scaffold a page + viewmodel + sidebar entry using the design tokens. |
+
+They activate automatically on matching requests or can be invoked explicitly (e.g. `/diagnose-scrape`). They are contributor tooling only and have no runtime effect.
+
 ## Commit Messages
 
 Use [Conventional Commits](https://www.conventionalcommits.org/):

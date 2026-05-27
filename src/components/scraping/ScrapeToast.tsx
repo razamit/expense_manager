@@ -122,7 +122,13 @@ export function ScrapeToast() {
                   {row.accountName}
                 </p>
                 {row.message && (
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p
+                    className={
+                      row.status === "error"
+                        ? "text-xs text-destructive"
+                        : "truncate text-xs text-muted-foreground"
+                    }
+                  >
                     {row.message}
                   </p>
                 )}

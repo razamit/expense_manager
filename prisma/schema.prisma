@@ -119,6 +119,7 @@ model ScrapeRun {
   txnCount     Int           @default(0)
   newTxnCount  Int           @default(0)
   progressJson String?
+  logJson      String?
   account      Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 

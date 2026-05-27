@@ -2,6 +2,8 @@ import { AccountRepository } from "@/repositories/AccountRepository";
 import { ScrapingManager } from "@/managers/ScrapingManager";
 import { TransactionImportCoordinator } from "./TransactionImportCoordinator";
 import { ConfigEncryptionManager } from "@/managers/ConfigEncryptionManager";
+import { ScrapeRunLogger } from "@/lib/scrape-logging/ScrapeRunLogger";
+import { describeScrapeError } from "@/lib/scrape-logging/scrape-error-messages";
 import type { Account } from "@prisma/client";
 import type { ScrapeAccountResult } from "@/lib/scraper-adapter";
 import type { ScrapeBindingOption, ScrapeProgress } from "@/types";
@@ -138,6 +140,11 @@ export class ScrapeCoordinator {
     group: ScrapeAccountGroup,
     onProgress?: ProgressCallback
   ): Promise<ScrapeProgress[]> {
+    const logger = new ScrapeRunLogger({
+      label: group.credentialOwner?.displayName ?? group.credentialOwnerId,
+      companyType: group.credentialOwner?.companyType ?? "unknown",
+    });
+
     const baseProgresses = group.accounts.map((account) => {
       const progress = this.createProgress(account, group, {
         status: "scraping",
@@ -147,30 +154,24 @@ export class ScrapeCoordinator {
       return progress;
     });
 
-    if (!group.credentialOwner) {
-      return this.finishGroupWithError(
-        group,
-        baseProgresses,
-        "Credential source account not found",
-        undefined,
-        onProgress
-      );
-    }
-
-    const credentials = ConfigEncryptionManager.getCredentialsForAccount(
-      group.credentialOwner
-    );
+    const credentials = this.resolveGroupCredentials(group, logger);
     if (!credentials) {
+      await logger.flush();
       return this.finishGroupWithError(
         group,
         baseProgresses,
-        `No credentials found for ${group.credentialOwner.displayName}`,
+        logger.getEntries().at(-1)?.message ?? "Credentials unavailable",
         undefined,
         onProgress
       );
     }
 
     const runIds = await this.createRunIdMap(group.accounts);
+    logger.info(
+      `Tracking ${group.accounts.length} run(s): ${group.accounts
+        .map((account) => account.displayName)
+        .join(", ")}`
+    );
 
     // Re-emit with runId so onProgress writer can persist to DB.
     for (const account of group.accounts) {
@@ -179,90 +180,21 @@ export class ScrapeCoordinator {
       onProgress?.(p);
     }
 
+    let results: ScrapeProgress[];
     try {
-      const scrapeResult = await ScrapingManager.executeScrape(
-        group.credentialOwner.companyType,
-        credentials
-      );
-
-      if (!scrapeResult.success) {
-        return this.finishGroupWithError(
-          group,
-          baseProgresses,
-          scrapeResult.errorMessage ?? "Scrape failed",
-          scrapeResult.errorType,
-          onProgress,
-          runIds
-        );
-      }
-
-      const matchPlan = this.buildMatchPlan(group.accounts, scrapeResult.accounts);
-      const results: ScrapeProgress[] = [];
-
-      for (const account of group.accounts) {
-        const runId = runIds.get(account.id);
-        if (!runId) {
-          continue;
-        }
-
-        const matchedScrapeAccount = matchPlan.assignedScrapeAccounts.get(
-          account.id
-        );
-
-        if (matchedScrapeAccount) {
-          const progress = await this.importMatchedAccount({
-            account,
-            group,
-            runId,
-            scrapeAccount: matchedScrapeAccount,
-            autoBound: matchPlan.autoBoundAccountIds.has(account.id),
-            onProgress,
-          });
-          results.push(progress);
-          continue;
-        }
-
-        if (matchPlan.bindingNeededAccountIds.has(account.id)) {
-          const progress = await this.blockAccountForBinding({
-            account,
-            group,
-            runId,
-            availableBindings: matchPlan.availableBindings,
-            onProgress,
-          });
-          results.push(progress);
-          continue;
-        }
-
-        if (matchPlan.unbindableAccountIds.has(account.id)) {
-          const progress = await this.finishAccountWithError({
-            account,
-            group,
-            runId,
-            errorType: "MISSING_ACCOUNT_NUMBER",
-            errorMessage:
-              "Scrape returned accounts without bindable card/account numbers",
-            onProgress,
-          });
-          results.push(progress);
-          continue;
-        }
-
-        const progress = await this.finishWithoutImport({
-          account,
-          group,
-          runId,
-          onProgress,
-        });
-        results.push(progress);
-      }
-
-      return results;
+      results = await this.runGroupScrape({
+        group,
+        credentials,
+        runIds,
+        baseProgresses,
+        logger,
+        onProgress,
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-
-      return this.finishGroupWithError(
+      logger.error("Unhandled scrape exception", error);
+      results = await this.finishGroupWithError(
         group,
         baseProgresses,
         errorMessage,
@@ -270,6 +202,155 @@ export class ScrapeCoordinator {
         onProgress,
         runIds
       );
+    } finally {
+      await logger.flush();
+      await ScrapingManager.attachLogToRuns(
+        [...runIds.values()],
+        logger.serialize()
+      );
+    }
+
+    return results;
+  }
+
+  private static resolveGroupCredentials(
+    group: ScrapeAccountGroup,
+    logger: ScrapeRunLogger
+  ): Record<string, string> | null {
+    if (!group.credentialOwner) {
+      logger.error("Credential source account not found");
+      return null;
+    }
+
+    const credentials = ConfigEncryptionManager.getCredentialsForAccount(
+      group.credentialOwner
+    );
+    if (!credentials) {
+      logger.error(`No credentials found for ${group.credentialOwner.displayName}`);
+      return null;
+    }
+
+    return credentials;
+  }
+
+  private static async runGroupScrape(params: {
+    group: ScrapeAccountGroup;
+    credentials: Record<string, string>;
+    runIds: Map<string, string>;
+    baseProgresses: ScrapeProgress[];
+    logger: ScrapeRunLogger;
+    onProgress?: ProgressCallback;
+  }): Promise<ScrapeProgress[]> {
+    const { group, credentials, runIds, baseProgresses, logger, onProgress } =
+      params;
+
+    const scrapeResult = await ScrapingManager.executeScrape(
+      group.credentialOwner!.companyType,
+      credentials,
+      { onStep: (step) => logger.step(step) }
+    );
+
+    if (!scrapeResult.success) {
+      const friendlyMessage = describeScrapeError(
+        scrapeResult.errorType,
+        scrapeResult.errorMessage
+      );
+      logger.error(`Scrape failed [${scrapeResult.errorType ?? "UNKNOWN"}]: ${friendlyMessage}`);
+      return this.finishGroupWithError(
+        group,
+        baseProgresses,
+        friendlyMessage,
+        scrapeResult.errorType,
+        onProgress,
+        runIds
+      );
+    }
+
+    logger.info(
+      `Scrape returned ${scrapeResult.accounts.length} account(s); matching against ${group.accounts.length} configured account(s)`
+    );
+
+    const matchPlan = this.buildMatchPlan(group.accounts, scrapeResult.accounts);
+    const results: ScrapeProgress[] = [];
+
+    for (const account of group.accounts) {
+      const runId = runIds.get(account.id);
+      if (!runId) continue;
+
+      const progress = await this.resolveAccountOutcome({
+        account,
+        group,
+        runId,
+        matchPlan,
+        onProgress,
+      });
+      this.logAccountOutcome(logger, account, progress);
+      results.push(progress);
+    }
+
+    return results;
+  }
+
+  private static async resolveAccountOutcome(params: {
+    account: Account;
+    group: ScrapeAccountGroup;
+    runId: string;
+    matchPlan: MatchPlan;
+    onProgress?: ProgressCallback;
+  }): Promise<ScrapeProgress> {
+    const { account, group, runId, matchPlan, onProgress } = params;
+
+    const matchedScrapeAccount = matchPlan.assignedScrapeAccounts.get(account.id);
+    if (matchedScrapeAccount) {
+      return this.importMatchedAccount({
+        account,
+        group,
+        runId,
+        scrapeAccount: matchedScrapeAccount,
+        autoBound: matchPlan.autoBoundAccountIds.has(account.id),
+        onProgress,
+      });
+    }
+
+    if (matchPlan.bindingNeededAccountIds.has(account.id)) {
+      return this.blockAccountForBinding({
+        account,
+        group,
+        runId,
+        availableBindings: matchPlan.availableBindings,
+        onProgress,
+      });
+    }
+
+    if (matchPlan.unbindableAccountIds.has(account.id)) {
+      return this.finishAccountWithError({
+        account,
+        group,
+        runId,
+        errorType: "MISSING_ACCOUNT_NUMBER",
+        errorMessage:
+          "Scrape returned accounts without bindable card/account numbers",
+        onProgress,
+      });
+    }
+
+    return this.finishWithoutImport({ account, group, runId, onProgress });
+  }
+
+  private static logAccountOutcome(
+    logger: ScrapeRunLogger,
+    account: Account,
+    progress: ScrapeProgress
+  ): void {
+    const summary = `${account.displayName} → ${progress.status}: ${
+      progress.message ?? ""
+    }`;
+    if (progress.status === "error") {
+      logger.error(summary);
+    } else if (progress.status === "binding-needed") {
+      logger.warn(summary);
+    } else {
+      logger.info(summary);
     }
   }
 

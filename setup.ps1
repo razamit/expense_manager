@@ -3,6 +3,7 @@ param(
     [switch]$SkipNodeInstall,
     [switch]$SkipInstall,
     [switch]$ForceEnv,
+    [switch]$Launch,
     [switch]$Help
 )
 
@@ -87,7 +88,9 @@ function Get-RepoRoot {
 if ($Help) {
     Write-Host "FinanceChecker setup"
     Write-Host ""
-    Write-Host "Usage: powershell -ExecutionPolicy Bypass -File .\setup.ps1 [-NoStart] [-SkipNodeInstall] [-SkipInstall] [-ForceEnv]"
+    Write-Host "Usage: powershell -ExecutionPolicy Bypass -File .\setup.ps1 [-Launch] [-NoStart] [-SkipNodeInstall] [-SkipInstall] [-ForceEnv]"
+    Write-Host ""
+    Write-Host "  -Launch  Build and run the production server on port 5000, then open the browser"
     exit 0
 }
 
@@ -95,6 +98,18 @@ $repoRoot = Get-RepoRoot
 Set-Location $repoRoot
 
 Install-NodeIfNeeded
+
+if ($Launch) {
+    $launchArgs = @("scripts/launch.cjs")
+
+    if ($ForceEnv) {
+        $launchArgs += "--force-env"
+    }
+
+    Write-SetupInfo "Running production launch flow from $repoRoot"
+    Invoke-ExternalCommand "node" $launchArgs
+    exit 0
+}
 
 $nodeArgs = @("scripts/setup.cjs")
 

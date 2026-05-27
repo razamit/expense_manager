@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AccountRepository } from "@/repositories/AccountRepository";
+import { ScrapingManager } from "@/managers/ScrapingManager";
 import { ConfigEncryptionManager } from "@/managers/ConfigEncryptionManager";
 
-function mapAccountResponse(account: Awaited<ReturnType<typeof AccountRepository.findById>> extends infer T
-  ? NonNullable<T>
-  : never) {
+type LatestRun = {
+  status: string;
+  errorType: string | null;
+  errorMessage: string | null;
+};
+
+function mapAccountResponse(
+  account: Awaited<ReturnType<typeof AccountRepository.findById>> extends infer T
+    ? NonNullable<T>
+    : never,
+  latestRun?: LatestRun
+) {
   return {
     id: account.id,
     displayName: account.displayName,
@@ -14,6 +24,9 @@ function mapAccountResponse(account: Awaited<ReturnType<typeof AccountRepository
     lastScrapedAt: account.lastScrapedAt?.toISOString() ?? null,
     lastBalance: account.lastBalance,
     isActive: account.isActive,
+    lastScrapeStatus: latestRun?.status ?? null,
+    lastScrapeErrorType: latestRun?.errorType ?? null,
+    lastScrapeErrorMessage: latestRun?.errorMessage ?? null,
   };
 }
 
@@ -120,7 +133,14 @@ async function validateCredentialSource(params: {
 
 export async function GET() {
   const accounts = await AccountRepository.findAll();
-  return NextResponse.json(accounts.map(mapAccountResponse));
+  const latestRuns = await ScrapingManager.getLatestRunsForAccounts(
+    accounts.map((account) => account.id)
+  );
+  return NextResponse.json(
+    accounts.map((account) =>
+      mapAccountResponse(account, latestRuns.get(account.id))
+    )
+  );
 }
 
 export async function POST(request: NextRequest) {

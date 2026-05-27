@@ -32,6 +32,8 @@ export interface ScrapeRequest {
   credentials: Record<string, string>;
   startDate: Date;
   futureMonthsToScrape?: number;
+  /** Called for each scraper lifecycle step (ScraperProgressTypes value). */
+  onStep?: (step: string) => void;
 }
 
 export interface ScrapeResult {
@@ -96,6 +98,11 @@ export async function scrapeAccount(
     } as ScraperOptions;
 
     const scraper = createScraper(options);
+    if (request.onStep) {
+      scraper.onProgress((_companyId, payload: { type: string }) => {
+        request.onStep?.(payload.type);
+      });
+    }
     const result: ScraperScrapingResult = await scraper.scrape(
       request.credentials as ScraperCredentials
     );

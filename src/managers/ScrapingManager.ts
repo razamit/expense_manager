@@ -99,9 +99,9 @@ export class ScrapingManager {
   static async executeScrape(
     companyType: string,
     credentials: Record<string, string>,
-    monthsBack?: number
+    options?: { monthsBack?: number; onStep?: (step: string) => void }
   ): Promise<ScrapeResult> {
-    const months = monthsBack ?? await this.getMonthsBack();
+    const months = options?.monthsBack ?? await this.getMonthsBack();
     const futureMonths = await this.getFutureMonths();
     const startDate = getMonthsAgo(months);
     return scrapeAccount({
@@ -109,6 +109,7 @@ export class ScrapingManager {
       credentials,
       startDate,
       futureMonthsToScrape: futureMonths,
+      onStep: options?.onStep,
     });
   }
 
@@ -128,6 +129,15 @@ export class ScrapingManager {
         ...data,
         completedAt: new Date(),
       },
+    });
+  }
+
+  /** Attaches the serialized session log to every run in a credential group. */
+  static async attachLogToRuns(runIds: string[], logJson: string): Promise<void> {
+    if (runIds.length === 0) return;
+    await prisma.scrapeRun.updateMany({
+      where: { id: { in: runIds } },
+      data: { logJson },
     });
   }
 
@@ -217,6 +227,47 @@ export class ScrapingManager {
       where: { accountId },
       orderBy: { startedAt: "desc" },
       take: limit,
+    });
+  }
+
+  static async getRunHistory(limit: number = 100) {
+    return prisma.scrapeRun.findMany({
+      orderBy: { startedAt: "desc" },
+      take: Math.min(Math.max(1, limit), 500),
+      include: { account: { select: { displayName: true, companyType: true } } },
+    });
+  }
+
+  static async getLatestRunsForAccounts(
+    accountIds: string[]
+  ): Promise<
+    Map<string, { status: string; errorType: string | null; errorMessage: string | null }>
+  > {
+    const entries = await Promise.all(
+      accountIds.map(async (accountId) => {
+        const run = await prisma.scrapeRun.findFirst({
+          where: { accountId },
+          orderBy: { startedAt: "desc" },
+          select: { status: true, errorType: true, errorMessage: true },
+        });
+        return [accountId, run] as const;
+      })
+    );
+
+    const map = new Map<
+      string,
+      { status: string; errorType: string | null; errorMessage: string | null }
+    >();
+    for (const [accountId, run] of entries) {
+      if (run) map.set(accountId, run);
+    }
+    return map;
+  }
+
+  static async getRunById(runId: string) {
+    return prisma.scrapeRun.findUnique({
+      where: { id: runId },
+      include: { account: { select: { displayName: true, companyType: true } } },
     });
   }
 }

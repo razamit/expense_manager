@@ -1,3 +1,7 @@
+import type { ScrapeLogEntry, ScrapeLogLevel } from "@/lib/scrape-logging/types";
+
+export type { ScrapeLogEntry, ScrapeLogLevel };
+
 export interface AccountDTO {
   id: string;
   displayName: string;
@@ -7,6 +11,9 @@ export interface AccountDTO {
   lastScrapedAt: string | null;
   lastBalance: number | null;
   isActive: boolean;
+  lastScrapeStatus: string | null;
+  lastScrapeErrorType: string | null;
+  lastScrapeErrorMessage: string | null;
 }
 
 export interface TransactionDTO {
@@ -98,6 +105,7 @@ export interface ScrapeRunDTO {
   id: string;
   accountId: string;
   accountName?: string;
+  companyType?: string;
   startedAt: string;
   completedAt: string | null;
   status: string;
@@ -105,6 +113,11 @@ export interface ScrapeRunDTO {
   errorMessage: string | null;
   txnCount: number;
   newTxnCount: number;
+  hasLog: boolean;
+}
+
+export interface ScrapeRunDetailDTO extends ScrapeRunDTO {
+  log: ScrapeLogEntry[];
 }
 
 export interface BudgetDTO {

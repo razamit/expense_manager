@@ -1,24 +1,22 @@
 # Claude Configuration
 
-## Overview
+This folder holds [Claude Code](https://docs.claude.com/en/docs/claude-code) configuration for FinanceChecker.
 
-This folder contains Claude/Cursor agent configuration for the FinanceChecker project. It defines permissions and environment-specific settings.
-
-## File Structure
+## Structure
 
 ```
 .claude/
-├── README.md           # This file
-├── settings.local.json # Local permissions (allow Bash, WebFetch, etc.)
-└── settings.json       # Optional shared settings (if present)
+├── README.md            # This file
+├── skills/              # Project agent skills (committed, shared)
+└── settings.local.json  # Local permissions (gitignored, per-developer)
 ```
 
-## Purpose
+## Contents
 
-- **settings.local.json** – Defines which shell commands and tools agents are allowed to run (e.g., patch-package, sqlite3, prisma). Not committed; local to each developer/agent environment.
+- **`skills/`** — Project-specific agent skills checked into the repo so all contributors share the same project-aware workflows. See [`skills/README.md`](skills/README.md).
+- **`settings.local.json`** — Per-developer tool/permission settings. Git-ignored; never committed. Application secrets and environment variables live in `.env` at the project root, not here.
 
-## For Agents
+## Notes for agents
 
-- Use this folder only for understanding project tooling permissions.
-- Do not rely on `settings.local.json` for application logic; it is IDE/agent config.
-- Application secrets and env vars live in `.env` at project root.
+- Use `skills/` for project workflows (diagnosing scrapes, scaffolding features, migrations, new pages).
+- Do not rely on `settings.local.json` for application logic; it is agent/IDE configuration only.

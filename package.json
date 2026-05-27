@@ -19,10 +19,11 @@
   "scripts": {
     "dev": "next dev --port 5000",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
+    "start": "next start --port 5000",
+    "lint": "eslint .",
     "setup": "node scripts/setup.cjs",
     "setup:no-start": "node scripts/setup.cjs --no-start",
+    "launch": "node scripts/launch.cjs",
     "db:generate": "prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:setup": "npm run db:deploy && npm run db:seed",
@@ -72,6 +73,9 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.6",
     "tsx": "^4.21.0"
   }
 }

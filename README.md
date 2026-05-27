@@ -23,6 +23,7 @@ FinanceChecker is built around six core workflows:
 - **Transactions**: inspect, filter, exclude, and recategorize imported transactions
 - **Categories**: maintain category trees and auto-categorization rules
 - **Statistics**: analyze spending patterns and category breakdowns with charts
+- **Sync History**: review every scrape run with a step-by-step log to see exactly why a sync failed
 - **Settings**: configure the master password and encrypted credential storage
 
 Under the hood, scraping is handled through `israeli-bank-scrapers` with Puppeteer-based browser automation, while Prisma persists normalized account and transaction data into a local database.
@@ -35,6 +36,7 @@ Under the hood, scraping is handled through `israeli-bank-scrapers` with Puppete
 - Manual and rule-based transaction categorization
 - Dashboard summaries and statistics pages
 - Anomaly detection for suspicious or unusual activity
+- Per-run scrape logging (on disk and in-app) with clear, actionable failure messages
 - Encrypted credential storage protected by a master password
 - Patch support for scraper-library fixes via `patch-package`
 
@@ -90,6 +92,8 @@ If you want the deeper breakdown, start with:
 | `prisma/` | Schema, migrations, and seed script |
 | `config/` | Encrypted runtime configuration and credentials |
 | `patches/` | `patch-package` fixes applied after install |
+| `logs/scrape/` | Per-run scrape logs (git-ignored, generated at runtime) |
+| `.claude/skills/` | Project agent skills for Claude Code (see `.claude/skills/README.md`) |
 | `docs/` | Supporting documentation and optional local-only design references |
 
 ## Requirements
@@ -104,16 +108,44 @@ You do **not** need a separate database server for local development. The defaul
 
 ## Quick Start
 
-The repository includes platform setup scripts that handle the full bootstrap flow:
+No terminal needed. Download, unzip, and double-click one file.
 
-1. verify Node.js and npm, and try to install them if missing
-2. copy `.env.example` to `.env` when needed
-3. install dependencies with `npm ci`
-4. apply Prisma migrations
-5. seed the local database
-6. optionally start the Next.js dev server on port `5000`
+1. Download the project ZIP from GitHub (**Code → Download ZIP**) and unzip it.
+2. Open the unzipped folder and double-click:
+   - **Windows:** `Start.bat`
+   - **macOS:** `Start.command`
+   - **Linux:** run `bash start.sh` from the folder (file-manager double-click is unreliable)
+3. Wait for your browser to open at [http://localhost:5000](http://localhost:5000), then create your master password.
 
-### Windows
+The launcher installs Node.js if missing, installs dependencies, builds a production
+bundle, starts the server on port `5000`, and opens your browser automatically.
+
+> **First launch takes a few minutes.** It downloads dependencies and a bundled Chromium,
+> then builds the app. Every launch after that is fast: it reuses the installed
+> dependencies and the existing build, and starts almost immediately.
+
+To stop the app, close the launcher window (or press `Ctrl+C` in it).
+
+### Unidentified-developer prompts
+
+These scripts are not code-signed, so your OS may warn the first time:
+
+- **Windows (SmartScreen):** if a blue "Windows protected your PC" dialog appears, click
+  **More info → Run anyway**.
+- **macOS (Gatekeeper):** if macOS blocks `Start.command`, right-click it and choose
+  **Open**, then confirm **Open** in the dialog. After the first time it runs normally.
+
+### Advanced: terminal setup
+
+The launcher above wraps the platform setup scripts, which you can also run directly.
+
+**Windows** — production launch (build + run + open browser):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1 -Launch
+```
+
+Without `-Launch`, `setup.ps1` runs the development bootstrap and starts `next dev`:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\setup.ps1
@@ -121,12 +153,19 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1
 
 Optional flags:
 
+- `-Launch` builds and runs the production server on port `5000`, then opens the browser
 - `-NoStart` prepares the repo without launching the dev server
 - `-SkipNodeInstall` fails instead of trying `winget` or `choco`
 - `-SkipInstall` skips `npm ci` and reuses the current `node_modules`
 - `-ForceEnv` recreates `.env` from `.env.example`
 
-### macOS / Linux
+**macOS / Linux** — production launch:
+
+```bash
+bash ./setup.sh --launch
+```
+
+Without `--launch`, `setup.sh` runs the development bootstrap and starts `next dev`:
 
 ```bash
 bash ./setup.sh
@@ -134,12 +173,13 @@ bash ./setup.sh
 
 Optional flags:
 
+- `--launch` builds and runs the production server on port `5000`, then opens the browser
 - `--no-start` prepares the repo without launching the dev server
 - `--skip-node-install` fails instead of trying the system package manager
 - `--skip-install` skips `npm ci` and reuses the current `node_modules`
 - `--force-env` recreates `.env` from `.env.example`
 
-When setup completes, open [http://localhost:5000](http://localhost:5000).
+When a setup or launch flow completes, open [http://localhost:5000](http://localhost:5000).
 
 On a fresh install, the first screen should be the master-password setup flow.
 
@@ -215,6 +255,9 @@ npm run build
 npm run start
 ```
 
+The production server runs on [http://localhost:5000](http://localhost:5000). For a
+one-step build-run-and-open flow, use `npm run launch` (or the double-click launchers).
+
 ## Environment And Data Files
 
 ### `.env`
@@ -235,13 +278,18 @@ The default SQLite database file used by Prisma.
 
 Encrypted storage for scraped-account credentials. Treat this as sensitive local data even though it is encrypted.
 
+### `logs/scrape/`
+
+Per-run scrape logs written at runtime, one file per sync session (`<timestamp>_<provider>_<account>.log`). Useful for diagnosing scrape failures. Git-ignored.
+
 ## Available Scripts
 
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Start the Next.js dev server on port `5000` |
 | `npm run build` | Build the production bundle |
-| `npm run start` | Run the production server |
+| `npm run start` | Run the production server on port `5000` |
+| `npm run launch` | Build (if needed) and run the production server on port `5000`, then open the browser |
 | `npm run lint` | Run ESLint |
 | `npm run setup` | Run the shared setup flow and start the dev server |
 | `npm run setup:no-start` | Run setup without starting the dev server |

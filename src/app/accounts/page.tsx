@@ -18,6 +18,17 @@ export default function AccountsPage() {
     setEditingAccount(account);
   }
 
+  function handleUpdatePassword(account: AccountDTO) {
+    // Credentials live on the credential owner; for shared logins that is the
+    // source account, so open the owner's edit dialog to replace the password.
+    const owner = account.credentialSourceAccountId
+      ? vm.accounts.find(
+          (candidate) => candidate.id === account.credentialSourceAccountId
+        ) ?? account
+      : account;
+    setEditingAccount(owner);
+  }
+
   function handleDelete(id: string) {
     if (confirm("Are you sure you want to delete this account?")) {
       vm.removeAccount(id);
@@ -90,6 +101,7 @@ export default function AccountsPage() {
               }
               onScrape={vm.scrapeAccount}
               onEdit={handleEdit}
+              onUpdatePassword={handleUpdatePassword}
               onDelete={handleDelete}
               isScraping={vm.isScraping}
             />

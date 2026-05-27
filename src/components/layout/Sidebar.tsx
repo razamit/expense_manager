@@ -8,6 +8,7 @@ import {
   ArrowLeftRight,
   Tag,
   BarChart3,
+  ScrollText,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/categories", label: "Categories", icon: Tag },
   { href: "/statistics", label: "Statistics", icon: BarChart3 },
+  { href: "/sync-history", label: "Sync History", icon: ScrollText },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -68,18 +70,6 @@ export function Sidebar() {
           })}
         </nav>
       </ScrollArea>
-
-      <div className="border-t border-outline-variant p-4">
-        <div className="rounded-lg border border-outline-variant bg-surface-container-lowest p-4">
-          <p className="app-eyebrow-label">Workspace</p>
-          <p className="mt-2 text-sm font-medium text-foreground">
-            Analytics and reconciliation
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Review balances, classify spending, and keep bank syncs current.
-          </p>
-        </div>
-      </div>
     </aside>
   );
 }
